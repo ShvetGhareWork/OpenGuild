@@ -16,7 +16,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
-import FlickeringGrid from '@/components/ui/flickering-grid';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 
 export default function PublicProfilePage() {
   const params = useParams();
