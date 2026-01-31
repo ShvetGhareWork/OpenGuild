@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Card, Badge } from '@/components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sparkles,
   ArrowRight,
@@ -92,6 +92,8 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
 
   // Form state
   const [role, setRole] = useState('builder');
@@ -105,6 +107,43 @@ export default function OnboardingPage() {
     portfolio: '',
   });
   const [bio, setBio] = useState('');
+
+  // Fetch user data on mount (for OAuth users)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:5000/api/users/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        if (data.success && data.data) {
+          const user = data.data;
+          setUserEmail(user.email || '');
+          setUserName(user.displayName || '');
+          
+          // Pre-fill existing data if any
+          if (user.role) setRole(user.role);
+          if (user.skills && user.skills.length > 0) setSelectedSkills(user.skills);
+          if (user.goals && user.goals.length > 0) setSelectedGoals(user.goals);
+          if (user.externalLinks) setExternalLinks({ ...externalLinks, ...user.externalLinks });
+          if (user.bio) setBio(user.bio);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
 
   const toggleSkill = (skillName: string) => {
     const exists = selectedSkills.find((s) => s.name === skillName);
