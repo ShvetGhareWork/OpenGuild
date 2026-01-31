@@ -134,7 +134,7 @@ export default function OnboardingPage() {
           if (user.role) setRole(user.role);
           if (user.skills && user.skills.length > 0) setSelectedSkills(user.skills);
           if (user.goals && user.goals.length > 0) setSelectedGoals(user.goals);
-          if (user.externalLinks) setExternalLinks({ ...externalLinks, ...user.externalLinks });
+          if (user.externalLinks) setExternalLinks(prev => ({ ...prev, ...user.externalLinks }));
           if (user.bio) setBio(user.bio);
         }
       } catch (err) {
@@ -143,6 +143,7 @@ export default function OnboardingPage() {
     };
 
     fetchUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const toggleSkill = (skillName: string) => {
