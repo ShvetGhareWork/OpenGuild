@@ -13,6 +13,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { AnimatedButton } from "./animated-button";
+import { getBackendUrl } from "@/lib/api";
 
 // --- TRUSTED PLATFORMS ---
 const TRUSTED_PLATFORMS = [
@@ -130,7 +131,7 @@ export default function GlassmorphismHero() {
                 <div className="h-px flex-1 bg-white/10" />
               </div>
               
-              <a href="http://localhost:5000/api/auth/google">
+              <a href={`${getBackendUrl()}/api/auth/google`}>
                 <button className="group w-full inline-flex items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 hover:scale-[1.02]">
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path

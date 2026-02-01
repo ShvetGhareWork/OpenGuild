@@ -1,5 +1,19 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+// Helper to get the base backend URL (without /api)
+export const getBackendUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use environment variable or localhost
+    return process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  }
+  return 'http://localhost:5000';
+};
+
+// Helper to get the API URL
+export const getApiUrl = (): string => {
+  return API_URL;
+};
+
 export interface LoginRequest {
   email: string;
   password: string;

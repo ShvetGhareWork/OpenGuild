@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/Label"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Card } from "@/components/ui/Card"
 import { Mail, Lock, Github } from "lucide-react"
-import { authAPI, tokenManager } from "@/lib/api"
+import { authAPI, tokenManager, getBackendUrl } from "@/lib/api"
 
 export default function SignInForm() {
   const router = useRouter()
@@ -155,7 +155,7 @@ export default function SignInForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+            onClick={() => window.location.href = `${getBackendUrl()}/api/auth/google`}
             className="w-full h-12 rounded-lg flex items-center justify-center gap-3 border-white/10 hover:bg-white/5"
           >
             <Image
