@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL, getBackendUrl } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function DashboardPage() {
 
       try {
         // Fetch user data
-        const userRes = await fetch('http://localhost:5000/api/users/me', {
+        const userRes = await fetch(`${API_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -60,7 +61,7 @@ export default function DashboardPage() {
         setUser(userData.data);
 
         // Fetch user's projects
-        const projectsRes = await fetch('http://localhost:5000/api/projects?limit=5', {
+        const projectsRes = await fetch(`${API_URL}/projects?limit=5`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -165,7 +166,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-4 mb-6">
                 {user?.avatar ? (
                   <img
-                    src={`http://localhost:5000${user.avatar}`}
+                    src={`${getBackendUrl()}${user.avatar}`}
                     alt={displayName}
                     className="w-16 h-16 rounded-full object-cover border-4 border-white/20 shadow-lg"
                   />

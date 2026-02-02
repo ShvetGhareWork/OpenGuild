@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { AnimatedButton } from '@/components/ui/animated-button';
+import { API_URL } from '@/lib/api';
 
 export default function ReputationPage() {
   const router = useRouter();
@@ -27,10 +28,10 @@ export default function ReputationPage() {
 
     try {
       const [breakdownRes, contributionsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/reputation/breakdown', {
+        fetch(`${API_URL}/reputation/breakdown`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/reputation/me', {
+        fetch(`${API_URL}/reputation/me`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

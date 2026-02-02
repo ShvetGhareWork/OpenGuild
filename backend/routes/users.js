@@ -6,6 +6,8 @@ const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+
 // Verify skills from external links
 router.post('/me/verify-skills', authMiddleware, async (req, res) => {
   try {
@@ -246,7 +248,7 @@ router.post('/me/avatar', authMiddleware, upload.single('avatar'), async (req, r
       success: true,
       data: {
         avatar: user.avatar,
-        url: `http://localhost:5000${user.avatar}`,
+        url: `${BACKEND_URL}${user.avatar}`,
       },
     });
   } catch (error) {

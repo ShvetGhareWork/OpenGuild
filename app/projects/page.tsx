@@ -8,6 +8,7 @@ import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { getProjects } from '@/lib/dummyProjects';
 import { Select, SelectItem, SelectListBox, SelectPopover, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AnimatedButton } from '@/components/ui/animated-button';
+import { API_URL } from '@/lib/api';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -35,7 +36,7 @@ export default function ProjectsPage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`http://localhost:5000/api/projects?${params}`, {
+      const res = await fetch(`${API_URL}/projects?${params}`, {
         headers,
       });
       const data = await res.json();
@@ -76,7 +77,7 @@ export default function ProjectsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${projectId}/upvote`, {
+      const res = await fetch(`${API_URL}/projects/${projectId}/upvote`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
