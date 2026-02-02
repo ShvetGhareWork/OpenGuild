@@ -2,16 +2,41 @@
 
 import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
-import { Search, Filter, TrendingUp, Clock, Users, Eye, ArrowUpCircle, Sparkles } from 'lucide-react';
+import {
+  Search,
+  TrendingUp,
+  Clock,
+  Users,
+  Eye,
+  ArrowUpCircle,
+  Sparkles,
+  Code2,
+  Trophy,
+  Target,
+  Zap,
+  User as UserIcon,
+  LogOut,
+} from 'lucide-react';
 import Link from 'next/link';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { getProjects } from '@/lib/dummyProjects';
-import { Select, SelectItem, SelectListBox, SelectPopover, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectItem,
+  SelectListBox,
+  SelectPopover,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { AnimatedButton } from '@/components/ui/animated-button';
+import { useRouter } from 'next/navigation';
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [filter, setFilter] = useState({
     status: 'all',
     sort: 'recent',
@@ -31,107 +56,133 @@ export default function ProjectsPage() {
 
       const token = localStorage.getItem('auth_token');
       const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`http://localhost:5000/api/projects?${params}`, {
-        headers,
-      });
+      const res = await fetch(`http://localhost:5000/api/projects?${params}`, { headers });
       const data = await res.json();
 
-      if (data.success) {
-        // Only show real projects from MongoDB
-        // Each user should only see their own projects + public projects
-        const realProjects = data.data.projects || [];
-        setProjects(realProjects);
-      } else {
-        // If API returns error, use dummy data as fallback
-        const dummyData = getProjects({
-          status: filter.status,
-          sort: filter.sort,
-          search: filter.search,
-        });
-        setProjects(dummyData.projects);
-      }
-      setLoading(false);
-    } catch (err) {
-      console.error('API Error, using dummy data:', err);
-      // Use dummy data when API is unavailable
-      const dummyData = getProjects({
-        status: filter.status,
-        sort: filter.sort,
-        search: filter.search,
-      });
-      setProjects(dummyData.projects);
+      if (data.success) setProjects(data.data.projects || []);
+      else setProjects(getProjects(filter).projects);
+    } catch {
+      setProjects(getProjects(filter).projects);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleUpvote = async (projectId: string) => {
     const token = localStorage.getItem('auth_token');
-    if (!token) {
-      alert('Please login to upvote');
-      return;
-    }
+    if (!token) return alert('Please login');
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/projects/${projectId}/upvote`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const res = await fetch(`http://localhost:5000/api/projects/${projectId}/upvote`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const data = await res.json();
-
-      if (data.success) {
-        // Update local state
-        setProjects(projects.map(p =>
-          p._id === projectId
-            ? { ...p, upvotes: data.data.upvotes }
-            : p
-        ));
-      }
-    } catch (err) {
-      console.error(err);
+    const data = await res.json();
+    if (data.success) {
+      setProjects((prev) =>
+        prev.map((p) => (p._id === projectId ? { ...p, upvotes: data.data.upvotes } : p))
+      );
     }
   };
 
   return (
     <div className="min-h-screen bg-black relative">
-      {/* Flickering Grid Background */}
-      <FlickeringGrid
-        className="z-0 absolute inset-0 w-full h-full"
-        squareSize={4}
-        gridGap={6}
-        color="#00d4ff"
-        maxOpacity={0.3}
-        flickerChance={0.1}
-      />
-      
-      {/* Navbar */}
+      <FlickeringGrid className="absolute inset-0 z-0" squareSize={4} gridGap={6} color="#00d4ff" />
+
+      {/* ================= NAVBAR ================= */}
       <nav className="glass border-b border-white/10 sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-2xl font-regular font-bold">
-               OpenGuild
-              </span>
+          <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
+            OpenGuild
           </Link>
 
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
+
+          {/* Mobile Hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden text-gray-300 text-2xl"
+          >
+            ☰
+          </button>
+
+          {/* Desktop Links */}
+          <div className="hidden lg:flex items-center gap-6">
+            <Link href="/dashboard" className="text-text-secondary hover:text-white">
               Dashboard
             </Link>
-            <Link href="/projects" className="text-text-primary font-medium">
+            <Link href="/projects" className="text-white font-semibold">
               Projects
             </Link>
-            <AnimatedButton href="/projects/create" variant="primary" className="text-sm px-4 py-2">
+            <Link href="/reputation" className="text-text-secondary hover:text-white">
+              Reputation
+            </Link>
+            <Link href="/tokens" className="text-text-secondary hover:text-white">
+              Tokens
+            </Link>
+            <Link href="/matching" className="text-text-secondary hover:text-white">
+              Matching
+            </Link>
+            <Link href="/profile" className="text-text-secondary hover:text-white">
+              Profile
+            </Link>
+            <AnimatedButton href="/projects/create" variant="primary">
               Create Project
             </AnimatedButton>
           </div>
         </div>
       </nav>
+
+      {/* ================= MOBILE SIDEBAR ================= */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden transition ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+          }`}
+      >
+        <div onClick={() => setMobileMenuOpen(false)} className="absolute inset-0 bg-black/70" />
+
+        <div
+          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900 via-black to-gray-900
+          border-r border-white/10 backdrop-blur-xl shadow-2xl transform transition-transform duration-300
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="p-6 h-full flex flex-col">
+            <div className="flex justify-between items-center mb-10">
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">OpenGuild</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="text-gray-400 text-xl">
+                ✕
+              </button>
+            </div>
+
+            {[
+              { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
+              { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
+              { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
+              { name: 'Tokens', path: '/tokens', icon: <Zap className="w-5 h-5" /> },
+              { name: 'Profile', path: '/profile', icon: <UserIcon className="w-5 h-5" /> },
+            ].map((item) => (
+              <button
+                key={item.name}
+                onClick={() => {
+                  router.push(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
+
+            <button
+              onClick={() => router.push('/')}
+              className="mt-auto flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10"
+            >
+              <LogOut className="w-5 h-5" /> Logout
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}

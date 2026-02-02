@@ -37,6 +37,8 @@ export default function ProfilePage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -64,7 +66,7 @@ export default function ProfilePage() {
         }
 
         setUser(data.data);
-        
+
         // Fetch user's projects and team projects
         try {
           const projectsRes = await fetch('http://localhost:5000/api/projects', {
@@ -75,16 +77,16 @@ export default function ProfilePage() {
           const projectsData = await projectsRes.json();
           if (projectsData.success) {
             const allProjects = projectsData.data.projects;
-            
+
             // Filter projects created by this user
             const userProjects = allProjects.filter(
               (p: any) => p.creatorId?._id === data.data._id || p.creatorId === data.data._id
             );
             setMyProjects(userProjects);
-            
+
             // Filter projects where user is a team member
             const userTeamProjects = allProjects.filter((p: any) =>
-              p.team?.some((member: any) => 
+              p.team?.some((member: any) =>
                 (member.userId?._id === data.data._id || member.userId === data.data._id) &&
                 (p.creatorId?._id !== data.data._id && p.creatorId !== data.data._id)
               )
@@ -94,7 +96,7 @@ export default function ProfilePage() {
         } catch (err) {
           console.error('Projects fetch error:', err);
         }
-        
+
         // Fetch notifications from database
         try {
           const notifRes = await fetch('http://localhost:5000/api/notifications', {
@@ -109,7 +111,7 @@ export default function ProfilePage() {
         } catch (err) {
           console.error('Notifications fetch error:', err);
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error('Profile fetch error:', err);
@@ -227,162 +229,274 @@ export default function ProfilePage() {
         maxOpacity={0.3}
         flickerChance={0.1}
       />
-      
-      {/* Navbar */}
-      <nav className="glass border-b border-white/10 sticky top-0 z-50 backdrop-blur-md relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-           <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-2xl font-regular font-bold">
-               OpenGuild
-              </span>
+
+      {/* ================= NAVBAR ================= */}
+      <nav className="glass border-b border-white/10 sticky top-0 z-50 relative">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link
+            href="/dashboard"
+            className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent"
+          >
+            OpenGuild
           </Link>
 
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors text-sm sm:text-base">
+          {/* Mobile Hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden text-gray-300 text-2xl"
+          >
+            ☰
+          </button>
+
+          {/* Desktop Links */}
+          <div className="hidden lg:flex items-center gap-6">
+            <Link href="/dashboard" className="text-text-secondary hover:text-white">
               Dashboard
             </Link>
-            <Link href="/profile" className="text-text-primary font-medium text-sm sm:text-base">
+            <Link href="/projects" className="text-text-secondary hover:text-white">
+              Projects
+            </Link>
+            <Link href="/reputation" className="text-text-secondary hover:text-white">
+              Reputation
+            </Link>
+            <Link href="/tokens" className="text-text-secondary hover:text-white">
+              Tokens
+            </Link>
+            <Link href="/matching" className="text-text-secondary hover:text-white">
+              Matching
+            </Link>
+            <Link href="/profile" className="text-white font-semibold">
               Profile
             </Link>
-            
-            {/* Notifications Bell */}
+
+            {/* Notifications */}
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 glass rounded-lg hover:bg-white/10 transition-colors"
+              className="relative p-2 glass rounded-lg hover:bg-white/10 transition"
             >
-              <Bell className="w-5 h-5 text-text-secondary" />
+              <Bell className="w-5 h-5 text-gray-300" />
               {notifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent-pink rounded-full text-xs flex items-center justify-center text-white font-bold">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
                   {notifications.length}
                 </span>
               )}
             </button>
-            
+
             <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              <LogOut className="w-4 h-4 mr-2" /> Logout
             </Button>
           </div>
         </div>
       </nav>
-      
-      {/* Notifications Dropdown */}
-      {showNotifications && (
-        <div className="fixed top-20 right-4 sm:right-8 w-80 sm:w-96 max-h-96 overflow-y-auto glass border border-white/20 rounded-xl p-4 z-50 backdrop-blur-md shadow-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-text-primary">Notifications</h3>
+
+      {/* ================= MOBILE SIDEBAR ================= */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden transition ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+          }`}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        />
+
+        {/* Sidebar */}
+        <div
+          className={`absolute left-0 top-0 h-full w-72 
+    bg-gradient-to-br from-gray-900 via-black to-gray-900
+    border-r border-white/10 backdrop-blur-xl shadow-2xl
+    transform transition-transform duration-300 ease-out
+    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="p-6 h-full flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-10">
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
+                OpenGuild
+              </span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-400 text-xl hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Links */}
+            {[
+              { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
+              { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
+              { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
+              { name: 'Tokens', path: '/tokens', icon: <Sparkles className="w-5 h-5" /> },
+              { name: 'Matching', path: '/matching', icon: <TrendingUp className="w-5 h-5" /> },
+              { name: 'Profile', path: '/profile', icon: <User className="w-5 h-5" /> },
+            ].map((item) => (
+              <button
+                key={item.name}
+                onClick={() => {
+                  router.push(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-4 px-4 py-3 rounded-xl 
+    text-gray-300 hover:text-white hover:bg-white/10 transition"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
             <button
-              onClick={() => setShowNotifications(false)}
-              className="text-text-tertiary hover:text-text-primary"
+              onClick={() => {
+                setShowNotifications(true);
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center justify-between px-4 py-3 rounded-xl 
+  text-gray-300 hover:text-white hover:bg-white/10 transition mt-6"
             >
-              ✕
+              <span className="flex items-center gap-4">
+                <Bell className="w-5 h-5" />
+                Notifications
+              </span>
+
+              {notifications.length > 0 && (
+                <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="mt-auto flex items-center gap-3 px-4 py-3 rounded-xl 
+        text-red-400 hover:bg-red-500/10 transition"
+            >
+              <LogOut className="w-5 h-5" /> Logout
             </button>
           </div>
-          
-          {notifications.length > 0 ? (
-            <div className="space-y-3">
-              {notifications.map((notif: any, i: number) => (
-                <div
-                  key={i}
-                  className="p-3 glass rounded-lg border border-white/10 hover:border-accent-cyan/30 transition-all"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-accent-cyan/20 flex items-center justify-center flex-shrink-0">
-                      <Bell className="w-4 h-4 text-accent-cyan" />
-                    </div>
-                    <div className="flex-1">
-                      {notif.type === 'application_received' && (
-                        <>
-                          <p className="text-sm text-text-primary font-medium mb-1">
-                            New application for <span className="text-accent-cyan">{notif.roleName}</span>
-                          </p>
-                          <p className="text-xs text-text-secondary mb-2">
-                            Project: {notif.projectName}
-                          </p>
-                          {notif.message && (
-                            <p className="text-xs text-text-tertiary italic mb-2">
-                              "{notif.message}"
-                            </p>
-                          )}
-                          {notif.applicationId ? (
-                            <div className="flex gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleAccept(notif.projectId, notif.applicationId)}
-                                disabled={accepting === notif.applicationId}
-                                className="text-xs px-3 py-1"
-                              >
-                                {accepting === notif.applicationId ? '...' : '✓ Accept'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => handleReject(notif.projectId, notif.applicationId)}
-                                disabled={accepting === notif.applicationId}
-                                className="text-xs px-3 py-1"
-                              >
-                                {accepting === notif.applicationId ? '...' : '✗ Reject'}
-                              </Button>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-text-tertiary mt-2 italic">
-                              Old notification - please check project page to manage applications
-                            </p>
-                          )}
-                        </>
-                      )}
-                      {notif.type === 'application_accepted' && (
-                        <>
-                          <p className="text-sm text-text-primary font-medium mb-1">
-                            🎉 Application Accepted!
-                          </p>
-                          <p className="text-xs text-text-secondary mb-2">
-                            You've been accepted for <span className="text-accent-cyan">{notif.roleName}</span> at {notif.projectName}
-                          </p>
-                          {notif.message && (
-                            <p className="text-xs text-text-tertiary italic">
-                              "{notif.message}"
-                            </p>
-                          )}
-                        </>
-                      )}
-                      {notif.type === 'application_rejected' && (
-                        <>
-                          <p className="text-sm text-text-primary font-medium mb-1">
-                            Application Update
-                          </p>
-                          <p className="text-xs text-text-secondary mb-2">
-                            Your application for <span className="text-accent-cyan">{notif.roleName}</span> at {notif.projectName}
-                          </p>
-                          {notif.message && (
-                            <p className="text-xs text-text-tertiary italic">
-                              "{notif.message}"
-                            </p>
-                          )}
-                        </>
-                      )}
-                      <p className="text-xs text-text-tertiary mt-2">
-                        {new Date(notif.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    href={`/projects/${notif.projectId}`}
-                    className="block mt-2 text-xs text-accent-cyan hover:underline"
-                  >
-                    View Project →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Bell className="w-12 h-12 text-text-tertiary mx-auto mb-3 opacity-50" />
-              <p className="text-text-tertiary text-sm">No new notifications</p>
-            </div>
-          )}
         </div>
-      )}
+      </div>
+
+
+      {/* Notifications Dropdown */}
+      {
+        showNotifications && (
+          <div className="fixed top-20 right-4 sm:right-8 w-80 sm:w-96 max-h-96 overflow-y-auto glass border border-white/20 rounded-xl p-4 z-50 backdrop-blur-md shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-text-primary">Notifications</h3>
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="text-text-tertiary hover:text-text-primary"
+              >
+                ✕
+              </button>
+            </div>
+
+            {notifications.length > 0 ? (
+              <div className="space-y-3">
+                {notifications.map((notif: any, i: number) => (
+                  <div
+                    key={i}
+                    className="p-3 glass rounded-lg border border-white/10 hover:border-accent-cyan/30 transition-all"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-accent-cyan/20 flex items-center justify-center flex-shrink-0">
+                        <Bell className="w-4 h-4 text-accent-cyan" />
+                      </div>
+                      <div className="flex-1">
+                        {notif.type === 'application_received' && (
+                          <>
+                            <p className="text-sm text-text-primary font-medium mb-1">
+                              New application for <span className="text-accent-cyan">{notif.roleName}</span>
+                            </p>
+                            <p className="text-xs text-text-secondary mb-2">
+                              Project: {notif.projectName}
+                            </p>
+                            {notif.message && (
+                              <p className="text-xs text-text-tertiary italic mb-2">
+                                "{notif.message}"
+                              </p>
+                            )}
+                            {notif.applicationId ? (
+                              <div className="flex gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAccept(notif.projectId, notif.applicationId)}
+                                  disabled={accepting === notif.applicationId}
+                                  className="text-xs px-3 py-1"
+                                >
+                                  {accepting === notif.applicationId ? '...' : '✓ Accept'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => handleReject(notif.projectId, notif.applicationId)}
+                                  disabled={accepting === notif.applicationId}
+                                  className="text-xs px-3 py-1"
+                                >
+                                  {accepting === notif.applicationId ? '...' : '✗ Reject'}
+                                </Button>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-text-tertiary mt-2 italic">
+                                Old notification - please check project page to manage applications
+                              </p>
+                            )}
+                          </>
+                        )}
+                        {notif.type === 'application_accepted' && (
+                          <>
+                            <p className="text-sm text-text-primary font-medium mb-1">
+                              🎉 Application Accepted!
+                            </p>
+                            <p className="text-xs text-text-secondary mb-2">
+                              You've been accepted for <span className="text-accent-cyan">{notif.roleName}</span> at {notif.projectName}
+                            </p>
+                            {notif.message && (
+                              <p className="text-xs text-text-tertiary italic">
+                                "{notif.message}"
+                              </p>
+                            )}
+                          </>
+                        )}
+                        {notif.type === 'application_rejected' && (
+                          <>
+                            <p className="text-sm text-text-primary font-medium mb-1">
+                              Application Update
+                            </p>
+                            <p className="text-xs text-text-secondary mb-2">
+                              Your application for <span className="text-accent-cyan">{notif.roleName}</span> at {notif.projectName}
+                            </p>
+                            {notif.message && (
+                              <p className="text-xs text-text-tertiary italic">
+                                "{notif.message}"
+                              </p>
+                            )}
+                          </>
+                        )}
+                        <p className="text-xs text-text-tertiary mt-2">
+                          {new Date(notif.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/projects/${notif.projectId}`}
+                      className="block mt-2 text-xs text-accent-cyan hover:underline"
+                    >
+                      View Project →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Bell className="w-12 h-12 text-text-tertiary mx-auto mb-3 opacity-50" />
+                <p className="text-text-tertiary text-sm">No new notifications</p>
+              </div>
+            )}
+          </div>
+        )
+      }
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
         {/* Profile Header */}
@@ -524,7 +638,7 @@ export default function ProfilePage() {
                 </div>
               </Card>
             )}
-            
+
             {/* My Projects Section */}
             <Card glass className="p-5 sm:p-6">
               <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
@@ -586,7 +700,7 @@ export default function ProfilePage() {
                 </div>
               )}
             </Card>
-            
+
             {/* Projects I'm Working On */}
             <Card glass className="p-5 sm:p-6">
               <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
@@ -599,7 +713,7 @@ export default function ProfilePage() {
                     const myRole = project.team?.find(
                       (m: any) => (m.userId?._id === user._id || m.userId === user._id)
                     )?.role;
-                    
+
                     return (
                       <Link
                         key={project._id}
@@ -665,19 +779,19 @@ export default function ProfilePage() {
                 <div>
                   <div className="text-xs sm:text-sm text-text-secondary mb-1">Member Since</div>
                   <div className="text-sm sm:text-base text-text-primary">
-                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
                     }) : 'N/A'}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs sm:text-sm text-text-secondary mb-1">Last Active</div>
                   <div className="text-sm sm:text-base text-text-primary">
-                    {user?.lastActiveAt ? new Date(user.lastActiveAt).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric' 
+                    {user?.lastActiveAt ? new Date(user.lastActiveAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
                     }) : 'N/A'}
                   </div>
                 </div>
@@ -778,15 +892,17 @@ export default function ProfilePage() {
       </main>
 
       {/* Edit Profile Modal */}
-      {showEditModal && (
-        <EditProfileModal
-          user={user}
-          onClose={() => setShowEditModal(false)}
-          onUpdate={handleUpdateProfile}
-        />
-      )}
-      
+      {
+        showEditModal && (
+          <EditProfileModal
+            user={user}
+            onClose={() => setShowEditModal(false)}
+            onUpdate={handleUpdateProfile}
+          />
+        )
+      }
+
       <Toaster position="top-right" />
-    </div>
+    </div >
   );
 }

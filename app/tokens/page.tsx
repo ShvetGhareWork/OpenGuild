@@ -2,17 +2,20 @@
 
 import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
-import { Sparkles, Coins, TrendingUp, TrendingDown, Calendar, Gift, ShoppingBag } from 'lucide-react';
+import { Sparkles, Coins, TrendingUp, TrendingDown, Calendar, Gift, ShoppingBag, LogOut, UserIcon, Zap, Trophy, Code2, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { AnimatedButton } from '@/components/ui/animated-button';
+import Sidebar from '@/components/ui/Sidebar';
+
 
 export default function TokensPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchTokenData();
@@ -75,29 +78,109 @@ export default function TokensPage() {
         maxOpacity={0.3}
         flickerChance={0.1}
       />
-      
-      {/* Navbar */}
+
+      {/* ================= NAVBAR ================= */}
       <nav className="glass border-b border-white/10 sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-2xl font-regular font-bold">
-               OpenGuild
-              </span>
+          <Link
+            href="/dashboard"
+            className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent"
+          >
+            OpenGuild
           </Link>
 
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
+          {/* Mobile Hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden text-gray-300 text-2xl"
+          >
+            ☰
+          </button>
+
+          {/* Desktop Links */}
+          <div className="hidden lg:flex items-center gap-6">
+            <Link href="/dashboard" className="text-text-secondary hover:text-white">
               Dashboard
             </Link>
-            <Link href="/tokens" className="text-text-primary font-medium">
-              Tokens
-            </Link>
-            <Link href="/projects" className="text-text-secondary hover:text-text-primary transition-colors">
+            <Link href="/projects" className="text-text-secondary hover:text-white">
               Projects
             </Link>
+            <Link href="/reputation" className="text-text-secondary hover:text-white">
+              Reputation
+            </Link>
+            <Link href="/tokens" className="text-white font-semibold">
+              Tokens
+            </Link>
+            <Link href="/matching" className="text-text-secondary hover:text-white">
+              Matching
+            </Link>
+            <Link href="/profile" className="text-text-secondary hover:text-white">
+              Profile
+            </Link>
+            <AnimatedButton href="/projects/create" variant="primary">
+              Create Project
+            </AnimatedButton>
           </div>
         </div>
       </nav>
+
+      {/* ================= MOBILE SIDEBAR ================= */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden transition ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+          }`}
+      >
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="absolute inset-0 bg-black/70"
+        />
+
+        <div
+          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900 via-black to-gray-900
+        border-r border-white/10 backdrop-blur-xl shadow-2xl transform transition-transform duration-300
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="p-6 h-full flex flex-col">
+            <div className="flex justify-between items-center mb-10">
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
+                OpenGuild
+              </span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-400 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {[
+              { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
+              { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
+              { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
+              { name: 'Tokens', path: '/tokens', icon: <Zap className="w-5 h-5" /> },
+              { name: 'Profile', path: '/profile', icon: <UserIcon className="w-5 h-5" /> },
+            ].map((item) => (
+              <button
+                key={item.name}
+                onClick={() => {
+                  router.push(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition"
+              >
+                {item.icon}
+                {item.name}
+              </button>
+            ))}
+
+            <button
+              onClick={() => router.push('/')}
+              className="mt-auto flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10"
+            >
+              <LogOut className="w-5 h-5" /> Logout
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}
@@ -267,9 +350,8 @@ export default function TokensPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-xl font-bold ${
-                      tx.type === 'earn' ? 'text-accent-green' : 'text-accent-pink'
-                    }`}>
+                    <div className={`text-xl font-bold ${tx.type === 'earn' ? 'text-accent-green' : 'text-accent-pink'
+                      }`}>
                       {tx.type === 'earn' ? '+' : '-'}{tx.amount}
                     </div>
                     <div className="text-xs text-text-tertiary">

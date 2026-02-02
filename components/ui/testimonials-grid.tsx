@@ -72,138 +72,163 @@ const testimonials: Testimonial[] = [
 
 export default function TestimonialsGrid() {
   return (
-    <section id="testimonials" className="relative py-20 px-6 bg-bg-primary">
+    <section id="testimonials" className="relative py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-bg-primary">
       <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <article className="max-w-screen-md mx-auto text-center space-y-4 mb-16">
-          <h2 className="text-4xl md:text-5xl font-medium">
-            Join 10,000+ builders {" "}
+        {/* Header - Responsive Typography */}
+        <article className="max-w-2xl mx-auto text-center space-y-3 sm:space-y-4 mb-12 sm:mb-16 lg:mb-20">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-medium leading-tight">
+            Join 10,000+ builders{'  '}
             <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent">
               Shipping Daily
             </span>
           </h2>
-          <p className="text-xl text-text-secondary">
+          <p className="text-lg sm:text-xl lg:text-2xl text-text-secondary max-w-lg mx-auto">
             Let's hear how OpenGuild builders feel about the platform
           </p>
         </article>
 
-        {/* Testimonials Grid */}
-        <div className="lg:grid lg:grid-cols-3 gap-4 flex flex-col w-full">
-          {/* Column 1 */}
-          <div className="md:flex lg:flex-col lg:space-y-4 h-full lg:gap-0 gap-4">
-            <div className="lg:flex-[7] flex-[6] flex flex-col justify-between relative glass overflow-hidden rounded-2xl border border-white/10 p-6 hover:bg-white/5 transition-all">
-              <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:50px_56px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-              <article className="mt-auto relative z-10">
-                <p className="text-text-secondary mb-6">{testimonials[0].quote}</p>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h3 className="font-semibold text-lg text-text-primary">
-                      {testimonials[0].name}
-                    </h3>
-                    <p className="text-sm text-text-tertiary">{testimonials[0].role}</p>
-                  </div>
-                  <Image
-                    src={testimonials[0].image}
-                    alt={testimonials[0].name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
+        {/* Responsive Testimonials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          {/* Featured Testimonial 1 - Large on all sizes */}
+          <div className="md:col-span-2 lg:col-span-1 row-span-2 relative glass overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 p-6 sm:p-8 lg:p-10 hover:bg-white/5 transition-all group">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:50px_56px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-80 group-hover:opacity-100 transition-opacity"></div>
+            <article className="relative z-10 mt-auto h-full flex flex-col justify-end">
+              <p className="text-text-secondary mb-6 lg:mb-8 leading-relaxed text-sm sm:text-base lg:text-lg line-clamp-4 sm:line-clamp-5">{testimonials[0].quote}</p>
+              <div className="flex items-end sm:items-center gap-4 sm:gap-6">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl lg:text-2xl text-text-primary truncate">{testimonials[0].name}</h3>
+                  <p className="text-sm sm:text-base text-text-tertiary">{testimonials[0].role}</p>
                 </div>
-              </article>
-            </div>
-            <div className="lg:flex-[3] flex-[4] flex flex-col justify-between relative bg-accent-cyan/20 overflow-hidden rounded-2xl border border-accent-cyan/30 p-6 hover:bg-accent-cyan/30 transition-all">
-              <article className="mt-auto">
-                <p className="text-text-primary mb-6">{testimonials[1].quote}</p>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h3 className="font-semibold text-lg">{testimonials[1].name}</h3>
-                    <p className="text-sm text-text-secondary">{testimonials[1].role}</p>
-                  </div>
-                  <Image
-                    src={testimonials[1].image}
-                    alt={testimonials[1].name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
-                </div>
-              </article>
-            </div>
-          </div>
-
-          {/* Column 2 */}
-          <div className="lg:h-full md:flex lg:flex-col h-fit lg:space-y-4 lg:gap-0 gap-4">
-            {[testimonials[2], testimonials[3], testimonials[4]].map((testimonial, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col justify-between relative glass overflow-hidden rounded-2xl border border-white/10 p-6 hover:bg-white/5 transition-all"
-              >
-                <article className="mt-auto">
-                  <p className="text-sm text-text-secondary mb-6">
-                    {testimonial.quote}
-                  </p>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <h3 className="font-semibold text-lg text-text-primary">
-                        {testimonial.name}
-                      </h3>
-                      <p className="text-sm text-text-tertiary">{testimonial.role}</p>
-                    </div>
-                    <Image
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-xl object-cover"
-                    />
-                  </div>
-                </article>
+                <Image
+                  src={testimonials[0].image}
+                  alt={testimonials[0].name}
+                  width={80}
+                  height={80}
+                  className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl object-cover flex-shrink-0 shadow-lg border-2 border-white/20"
+                />
               </div>
-            ))}
+            </article>
           </div>
 
-          {/* Column 3 */}
-          <div className="h-full md:flex lg:flex-col lg:space-y-4 lg:gap-0 gap-4">
-            <div className="lg:flex-[3] flex-[4] flex flex-col justify-between relative bg-accent-violet/20 overflow-hidden rounded-2xl border border-accent-violet/30 p-6 hover:bg-accent-violet/30 transition-all">
-              <article className="mt-auto">
-                <p className="text-text-primary mb-6">{testimonials[5].quote}</p>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h3 className="font-semibold text-lg">{testimonials[5].name}</h3>
-                    <p className="text-sm text-text-secondary">{testimonials[5].role}</p>
-                  </div>
-                  <Image
-                    src={testimonials[5].image}
-                    alt={testimonials[5].name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
+          {/* Accent Testimonial 1 */}
+          <div className="relative bg-accent-cyan/20 overflow-hidden rounded-2xl sm:rounded-3xl border border-accent-cyan/30 p-6 sm:p-8 hover:bg-accent-cyan/30 transition-all group h-full">
+            <article className="h-full flex flex-col justify-end">
+              <p className="text-text-primary mb-6 leading-relaxed text-sm sm:text-base line-clamp-4">{testimonials[1].quote}</p>
+              <div className="flex items-end sm:items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl text-text-primary truncate">{testimonials[1].name}</h3>
+                  <p className="text-sm text-text-secondary">{testimonials[1].role}</p>
                 </div>
-              </article>
-            </div>
-            <div className="lg:flex-[7] flex-[6] flex flex-col justify-between relative glass overflow-hidden rounded-2xl border border-white/10 p-6 hover:bg-white/5 transition-all">
-              <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:50px_56px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-              <article className="mt-auto relative z-10">
-                <p className="text-text-secondary mb-6">{testimonials[6].quote}</p>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <h3 className="font-semibold text-lg text-text-primary">
-                      {testimonials[6].name}
-                    </h3>
-                    <p className="text-sm text-text-tertiary">{testimonials[6].role}</p>
-                  </div>
-                  <Image
-                    src={testimonials[6].image}
-                    alt={testimonials[6].name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
+                <Image
+                  src={testimonials[1].image}
+                  alt={testimonials[1].name}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover flex-shrink-0"
+                />
+              </div>
+            </article>
+          </div>
+
+          {/* Standard Testimonial 1 */}
+          <div className="relative glass overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 p-6 sm:p-8 hover:bg-white/5 transition-all group h-full">
+            <article className="h-full flex flex-col justify-end">
+              <p className="text-sm sm:text-base text-text-secondary mb-6 leading-relaxed line-clamp-4">{testimonials[2].quote}</p>
+              <div className="flex items-end sm:items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl text-text-primary truncate">{testimonials[2].name}</h3>
+                  <p className="text-sm text-text-tertiary">{testimonials[2].role}</p>
                 </div>
-              </article>
-            </div>
+                <Image
+                  src={testimonials[2].image}
+                  alt={testimonials[2].name}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover flex-shrink-0"
+                />
+              </div>
+            </article>
+          </div>
+
+          {/* Standard Testimonial 2 */}
+          <div className="relative glass overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 p-6 sm:p-8 hover:bg-white/5 transition-all group h-full">
+            <article className="h-full flex flex-col justify-end">
+              <p className="text-sm sm:text-base text-text-secondary mb-6 leading-relaxed line-clamp-4">{testimonials[3].quote}</p>
+              <div className="flex items-end sm:items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl text-text-primary truncate">{testimonials[3].name}</h3>
+                  <p className="text-sm text-text-tertiary">{testimonials[3].role}</p>
+                </div>
+                <Image
+                  src={testimonials[3].image}
+                  alt={testimonials[3].name}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover flex-shrink-0"
+                />
+              </div>
+            </article>
+          </div>
+
+          {/* Accent Testimonial 2 */}
+          <div className="md:col-span-2 relative bg-accent-violet/20 overflow-hidden rounded-2xl sm:rounded-3xl border border-accent-violet/30 p-6 sm:p-8 hover:bg-accent-violet/30 transition-all group h-full">
+            <article className="h-full flex flex-col justify-end">
+              <p className="text-text-primary mb-6 leading-relaxed text-sm sm:text-base lg:text-lg line-clamp-4 sm:line-clamp-5">{testimonials[5].quote}</p>
+              <div className="flex items-end sm:items-center gap-4 sm:gap-6">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl lg:text-2xl text-text-primary truncate">{testimonials[5].name}</h3>
+                  <p className="text-sm sm:text-base text-text-secondary">{testimonials[5].role}</p>
+                </div>
+                <Image
+                  src={testimonials[5].image}
+                  alt={testimonials[5].name}
+                  width={80}
+                  height={80}
+                  className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl object-cover flex-shrink-0 shadow-lg border-2 border-white/20"
+                />
+              </div>
+            </article>
+          </div>
+
+          {/* Featured Testimonial 2 - Large */}
+          <div className="lg:col-span-1 row-span-2 relative glass overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 p-6 sm:p-8 lg:p-10 hover:bg-white/5 transition-all group">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:50px_56px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-80 group-hover:opacity-100 transition-opacity"></div>
+            <article className="relative z-10 mt-auto h-full flex flex-col justify-end">
+              <p className="text-text-secondary mb-6 lg:mb-8 leading-relaxed text-sm sm:text-base lg:text-lg line-clamp-4 sm:line-clamp-5">{testimonials[6].quote}</p>
+              <div className="flex items-end sm:items-center gap-4 sm:gap-6">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl lg:text-2xl text-text-primary truncate">{testimonials[6].name}</h3>
+                  <p className="text-sm sm:text-base text-text-tertiary">{testimonials[6].role}</p>
+                </div>
+                <Image
+                  src={testimonials[6].image}
+                  alt={testimonials[6].name}
+                  width={80}
+                  height={80}
+                  className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl object-cover flex-shrink-0 shadow-lg border-2 border-white/20"
+                />
+              </div>
+            </article>
+          </div>
+
+          {/* Remaining testimonials fill naturally */}
+          <div className="relative glass overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 p-6 sm:p-8 hover:bg-white/5 transition-all group h-full">
+            <article className="h-full flex flex-col justify-end">
+              <p className="text-sm sm:text-base text-text-secondary mb-6 leading-relaxed line-clamp-4">{testimonials[4].quote}</p>
+              <div className="flex items-end sm:items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg sm:text-xl text-text-primary truncate">{testimonials[4].name}</h3>
+                  <p className="text-sm text-text-tertiary">{testimonials[4].role}</p>
+                </div>
+                <Image
+                  src={testimonials[4].image}
+                  alt={testimonials[4].name}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover flex-shrink-0"
+                />
+              </div>
+            </article>
           </div>
         </div>
       </div>
