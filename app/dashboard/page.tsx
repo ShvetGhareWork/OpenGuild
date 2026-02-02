@@ -60,7 +60,7 @@ export default function DashboardPage() {
         setUser(userData.data);
 
         // Fetch user's projects
-        const projectsRes = await fetch('http://localhost:5000/api/projects?limit=5', {
+        const projectsRes = await fetch(`${API_URL}/projects?limit=5`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
