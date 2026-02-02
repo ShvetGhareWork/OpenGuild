@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getProjectById } from '@/lib/dummyProjects';
 import toast, { Toaster } from 'react-hot-toast';
 import ProjectChat from '@/components/ProjectChat';
+import { API_URL } from '@/lib/api';
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -28,7 +29,7 @@ export default function ProjectDetailPage() {
       const token = localStorage.getItem('auth_token');
       if (token) {
         try {
-          const res = await fetch('http://localhost:5000/api/users/me', {
+          const res = await fetch(`${API_URL}/users/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const data = await res.json();
@@ -45,7 +46,7 @@ export default function ProjectDetailPage() {
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${params.id}`);
+      const res = await fetch(`${API_URL}/projects/${params.id}`);
       const data = await res.json();
 
       if (data.success && data.data) {
@@ -77,7 +78,7 @@ export default function ProjectDetailPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${params.id}/upvote`, {
+      const res = await fetch(`${API_URL}/projects/${params.id}/upvote`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -109,7 +110,7 @@ export default function ProjectDetailPage() {
     setApplying(true);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${params.id}/apply`, {
+      const res = await fetch(`${API_URL}/projects/${params.id}/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

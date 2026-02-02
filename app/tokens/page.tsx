@@ -8,8 +8,7 @@ import { useRouter } from 'next/navigation';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { AnimatedButton } from '@/components/ui/animated-button';
-import Sidebar from '@/components/ui/Sidebar';
-
+import { API_URL } from '@/lib/api';
 
 export default function TokensPage() {
   const router = useRouter();
@@ -29,7 +28,7 @@ export default function TokensPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/tokens/me', {
+      const res = await fetch(`${API_URL}/tokens/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

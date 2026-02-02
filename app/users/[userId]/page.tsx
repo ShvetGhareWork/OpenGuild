@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
+import { API_URL, getBackendUrl } from '@/lib/api';
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -27,7 +28,7 @@ export default function PublicProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/users/${params.userId}/profile`);
+        const res = await fetch(`${API_URL}/users/${params.userId}/profile`);
         const result = await res.json();
         
         if (result.success) {
@@ -103,7 +104,7 @@ export default function PublicProfilePage() {
             <div className="flex items-center gap-4">
               {user.avatar ? (
                 <img
-                  src={`http://localhost:5000${user.avatar}`}
+                  src={`${getBackendUrl()}${user.avatar}`}
                   alt={displayName}
                   className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-accent-cyan"
                 />

@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import EditProfileModal from '@/components/EditProfileModal';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
+import { API_URL, getBackendUrl } from '@/lib/api';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function ProfilePage() {
       }
 
       try {
-        const res = await fetch('http://localhost:5000/api/users/me', {
+        const res = await fetch(`${API_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -69,7 +70,7 @@ export default function ProfilePage() {
 
         // Fetch user's projects and team projects
         try {
-          const projectsRes = await fetch('http://localhost:5000/api/projects', {
+          const projectsRes = await fetch(`${API_URL}/projects`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -99,7 +100,7 @@ export default function ProfilePage() {
 
         // Fetch notifications from database
         try {
-          const notifRes = await fetch('http://localhost:5000/api/notifications', {
+          const notifRes = await fetch(`${API_URL}/notifications`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -138,7 +139,7 @@ export default function ProfilePage() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/projects/${projectId}/applications/${applicationId}`,
+        `${API_URL}/projects/${projectId}/applications/${applicationId}`,
         {
           method: 'PATCH',
           headers: {
@@ -153,7 +154,7 @@ export default function ProfilePage() {
       if (data.success) {
         toast.success('Application accepted! User added to team.');
         // Refresh notifications
-        const notifRes = await fetch('http://localhost:5000/api/notifications', {
+        const notifRes = await fetch(`${API_URL}/notifications`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const notifData = await notifRes.json();
@@ -176,7 +177,7 @@ export default function ProfilePage() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/projects/${projectId}/applications/${applicationId}`,
+        `${API_URL}/projects/${projectId}/applications/${applicationId}`,
         {
           method: 'PATCH',
           headers: {
@@ -191,7 +192,7 @@ export default function ProfilePage() {
       if (data.success) {
         toast.success('Application rejected');
         // Refresh notifications
-        const notifRes = await fetch('http://localhost:5000/api/notifications', {
+        const notifRes = await fetch(`${API_URL}/notifications`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const notifData = await notifRes.json();
@@ -506,7 +507,7 @@ export default function ProfilePage() {
               {user?.avatar ? (
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-accent-cyan">
                   <img
-                    src={`http://localhost:5000${user.avatar}`}
+                    src={`${getBackendUrl()}${user.avatar}`}
                     alt={displayName}
                     className="w-full h-full object-cover"
                   />

@@ -6,6 +6,7 @@ import { Sparkles, ArrowRight, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Select, SelectItem, SelectListBox, SelectPopover, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { API_URL } from '@/lib/api';
 
 const TECH_STACK_OPTIONS = [
   'React',
@@ -108,7 +109,7 @@ export default function CreateProjectPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/projects', {
+      const res = await fetch(`${API_URL}/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

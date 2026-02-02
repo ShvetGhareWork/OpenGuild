@@ -13,6 +13,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/lib/api';
 
 const SKILLS = [
   'React',
@@ -118,7 +119,7 @@ export default function OnboardingPage() {
       }
 
       try {
-        const res = await fetch('http://localhost:5000/api/users/me', {
+        const res = await fetch(`${API_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -183,7 +184,7 @@ export default function OnboardingPage() {
         return;
       }
 
-      const res = await fetch('http://localhost:5000/api/users/me', {
+      const res = await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +208,7 @@ export default function OnboardingPage() {
       }
 
       // Mark onboarding as complete
-      await fetch('http://localhost:5000/api/users/me', {
+      await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Select, SelectItem, SelectListBox, SelectPopover, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { API_URL, getBackendUrl } from '@/lib/api';
 
 export default function TeamWorkspacePage() {
   const params = useParams();
@@ -21,7 +22,7 @@ export default function TeamWorkspacePage() {
     fetchTeam();
     
     // Initialize WebSocket
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io(getBackendUrl());
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -50,7 +51,7 @@ export default function TeamWorkspacePage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/teams/${params.id}`, {
+      const res = await fetch(`${API_URL}/teams/${params.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -87,7 +88,7 @@ export default function TeamWorkspacePage() {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`http://localhost:5000/api/teams/${params.id}/tasks`, {
+      const res = await fetch(`${API_URL}/teams/${params.id}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +112,7 @@ export default function TeamWorkspacePage() {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`http://localhost:5000/api/teams/${params.id}/tasks/${taskId}`, {
+      const res = await fetch(`${API_URL}/teams/${params.id}/tasks/${taskId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
