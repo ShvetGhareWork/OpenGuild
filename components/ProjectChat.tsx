@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Button, Card } from '@/components/ui';
 import { Send, X } from 'lucide-react';
+import { API_URL, getBackendUrl } from '@/lib/api';
 
 interface Message {
   _id: string;
@@ -29,7 +30,7 @@ export default function ProjectChat({ projectId, userId, userName, onClose }: Pr
 
   useEffect(() => {
     // Connect to WebSocket
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io(getBackendUrl());
     setSocket(newSocket);
 
     // Join project room
@@ -45,7 +46,7 @@ export default function ProjectChat({ projectId, userId, userName, onClose }: Pr
       try {
         const token = localStorage.getItem('auth_token');
         const res = await fetch(
-          `http://localhost:5000/api/projects/${projectId}/messages`,
+          `${API_URL}/projects/${projectId}/messages`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();

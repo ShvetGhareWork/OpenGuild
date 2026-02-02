@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/Label"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Card } from "@/components/ui/Card"
 import { Mail, Lock, Github } from "lucide-react"
-import { authAPI, tokenManager, getBackendUrl } from "@/lib/api"
+import { authAPI, tokenManager, getBackendUrl, API_URL } from "@/lib/api"
 
 export default function SignInForm() {
   const router = useRouter()
@@ -29,7 +29,7 @@ export default function SignInForm() {
     console.log("Email:", formData.email)
 
     try {
-      console.log("📡 Calling API:", `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/login`)
+      console.log("📡 Calling API:", `${API_URL}/auth/login`)
       
       const response = await authAPI.login({
         email: formData.email,
@@ -179,7 +179,7 @@ export default function SignInForm() {
 
         {/* Signup */}
         <p className="text-center text-sm text-text-secondary mt-2">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-accent-cyan cursor-pointer hover:underline font-semibold">
             Sign Up
           </Link>

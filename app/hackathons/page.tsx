@@ -4,6 +4,7 @@ import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { Sparkles, TrendingUp, Users, Calendar, Trophy, ExternalLink, Github } from 'lucide-react';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 
 export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<any[]>([]);
@@ -17,7 +18,7 @@ export default function HackathonsPage() {
   const fetchHackathons = async () => {
     try {
       const params = filter !== 'all' ? `?status=${filter}` : '';
-      const res = await fetch(`http://localhost:5000/api/hackathons${params}`);
+      const res = await fetch(`${API_URL}/hackathons${params}`);
       const data = await res.json();
 
       if (data.success) {

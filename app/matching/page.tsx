@@ -6,6 +6,7 @@ import { Sparkles, Target, TrendingUp, Users, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
+import { API_URL } from '@/lib/api';
 
 export default function MatchingPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function MatchingPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/matching/projects', {
+      const res = await fetch(`${API_URL}/matching/projects`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

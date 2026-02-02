@@ -3,6 +3,7 @@
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
 import { Button, Card } from '@/components/ui';
 import { X, Upload, User, Mail, Briefcase, Link as LinkIcon, Target } from 'lucide-react';
+import { API_URL, getBackendUrl } from '@/lib/api';
 
 interface EditProfileModalProps {
   user: any;
@@ -25,7 +26,7 @@ export default function EditProfileModal({ user, onClose, onUpdate }: EditProfil
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    user?.avatar ? `http://localhost:5000${user.avatar}` : null
+    user?.avatar ? `${getBackendUrl()}${user.avatar}` : null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -75,7 +76,7 @@ export default function EditProfileModal({ user, onClose, onUpdate }: EditProfil
         const formDataAvatar = new FormData();
         formDataAvatar.append('avatar', avatarFile);
 
-        const avatarRes = await fetch('http://localhost:5000/api/users/me/avatar', {
+        const avatarRes = await fetch(`${API_URL}/users/me/avatar`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -107,7 +108,7 @@ export default function EditProfileModal({ user, onClose, onUpdate }: EditProfil
         },
       };
 
-      const res = await fetch('http://localhost:5000/api/users/me', {
+      const res = await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
