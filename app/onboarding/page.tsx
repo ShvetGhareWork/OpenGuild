@@ -130,7 +130,7 @@ export default function OnboardingPage() {
           const user = data.data;
           setUserEmail(user.email || '');
           setUserName(user.displayName || '');
-          
+
           // Pre-fill existing data if any
           if (user.role) setRole(user.role);
           if (user.skills && user.skills.length > 0) setSelectedSkills(user.skills);
@@ -255,9 +255,8 @@ export default function OnboardingPage() {
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
-                className={`flex-1 h-2 rounded-full mx-1 transition-all ${
-                  s <= step ? 'bg-gradient-primary' : 'bg-bg-tertiary'
-                }`}
+                className={`flex-1 h-2 rounded-full mx-1 transition-all ${s <= step ? 'bg-gradient-primary' : 'bg-bg-tertiary'
+                  }`}
               />
             ))}
           </div>
@@ -277,11 +276,10 @@ export default function OnboardingPage() {
                 <div
                   key={r.value}
                   onClick={() => setRole(r.value)}
-                  className={`p-5 sm:p-6 rounded-xl border-2 cursor-pointer transition-all ${
-                    role === r.value
+                  className={`p-5 sm:p-6 rounded-xl border-2 cursor-pointer transition-all ${role === r.value
                       ? 'border-accent-cyan bg-accent-cyan/10'
                       : 'border-white/10 hover:border-accent-cyan/50'
-                  }`}
+                    }`}
                 >
                   <r.icon className="w-8 h-8 sm:w-10 sm:h-10 text-accent-cyan mb-3" />
                   <h3 className="text-lg sm:text-xl font-semibold mb-2">{r.label}</h3>
@@ -334,11 +332,10 @@ export default function OnboardingPage() {
                         <button
                           key={level}
                           onClick={() => updateSkillLevel(skill.name, level)}
-                          className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm transition-all ${
-                            skill.level === level
+                          className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm transition-all ${skill.level === level
                               ? 'bg-accent-cyan text-white'
                               : 'bg-bg-tertiary text-text-secondary hover:bg-bg-primary'
-                          }`}
+                            }`}
                         >
                           {level}
                         </button>

@@ -48,8 +48,6 @@ const authMiddleware = async (req, res, next) => {
       roleConfirmed: user.roleConfirmed || false
     };
 
-    req.userId = user._id;
-
     next();
   } catch (err) {
     if (err.name === 'JsonWebTokenError') {

@@ -1,9 +1,11 @@
-import React from "react";
-import { 
-  ArrowRight, 
-  Play, 
-  Target, 
-  Crown, 
+'use client';
+
+import React, { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Play,
+  Target,
+  Crown,
   Star,
   Code2,
   Users,
@@ -13,7 +15,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { AnimatedButton } from "./animated-button";
-import { getBackendUrl } from "@/lib/api";
+import { getBackendUrl, API_URL } from "@/lib/api";
 
 // --- TRUSTED PLATFORMS ---
 const TRUSTED_PLATFORMS = [
@@ -35,6 +37,41 @@ const StatItem = ({ value, label }: { value: string; label: string }) => (
 
 // --- MAIN COMPONENT ---
 export default function GlassmorphismHero() {
+  const [stats, setStats] = useState({
+    activeBuilders: '10,000+',
+    projectsShipped: '500+',
+    milestones: '50K+',
+    funding: '$2M+',
+    successRate: '98%'
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${API_URL}/stats`);
+        const data = await res.json();
+
+        if (data.success) {
+          setStats({
+            activeBuilders: data.data.activeBuildersFormatted,
+            projectsShipped: data.data.projectsShippedFormatted,
+            milestones: data.data.totalMilestonesFormatted,
+            funding: data.data.totalFundingFormatted,
+            successRate: data.data.successRateFormatted
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+        // Keep default values on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="relative w-full bg-bg-primary text-white overflow-hidden font-sans">
       {/* 
@@ -64,7 +101,7 @@ export default function GlassmorphismHero() {
       `}</style>
 
       {/* Background Image with Gradient Mask */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-[url(https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80)] bg-cover bg-center opacity-20"
         style={{
           maskImage: "linear-gradient(180deg, transparent, black 0%, black 70%, transparent)",
@@ -74,22 +111,22 @@ export default function GlassmorphismHero() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pt-24 pb-12 sm:px-6 md:pt-32 md:pb-20 lg:px-8">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8 items-start">
-          
+
           {/* --- LEFT COLUMN --- */}
           <div className="lg:col-span-7 flex flex-col justify-center space-y-8 pt-8">
-            
+
             {/* Badge */}
             <div className="animate-fade-in delay-100">
               <div className="px-3 py-1.5 backdrop-blur-md transition-colors hover:bg-white/10">
                 <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
                   {/* <Sparkles className="w-3.5 h-3.5 text-accent-cyan" /> */}
-                   
+
                 </span>
               </div>
             </div>
 
             {/* Heading */}
-            <h1 
+            <h1
               className="animate-fade-in delay-200 text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-medium tracking-tighter leading-[0.9]"
               style={{
                 maskImage: "linear-gradient(180deg, black 0%, black 80%, transparent 100%)",
@@ -104,39 +141,39 @@ export default function GlassmorphismHero() {
 
             {/* Description */}
             <p className="animate-fade-in delay-300 max-w-xl text-lg text-zinc-400 leading-relaxed">
-              The trusted network for builders. Join developers, designers, and founders 
+              The trusted network for builders. Join developers, designers, and founders
               forming verified teams, shipping real products, and earning reputation that opens doors.
             </p>
 
-          {/* CTA Buttons - Mobile Only Optimized */}
-<div className="animate-fade-in delay-400 flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
-  {/* Primary CTA - Mobile optimized */}
-  <AnimatedButton 
-    href="/signup" 
-    variant="primary"
-    className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold shadow-lg sm:shadow-2xl hover:shadow-xl sm:hover:shadow-3xl transition-all duration-300 min-h-[48px] sm:min-h-[44px]"
-  >
-    Join the Guild
-    <ArrowRight className="w-4 h-4 ml-1.5 sm:ml-2 transition-transform group-hover:translate-x-1 flex-shrink-0" />
-  </AnimatedButton>
-  
-  {/* Secondary CTA - Mobile optimized */}
-  <a href="/projects" className="w-full sm:w-auto">
-    <button className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border border-white/10 bg-white/5 px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:shadow-lg sm:hover:shadow-xl min-h-[48px] sm:min-h-[44px]">
-      Browse Projects
-      <Code2 className="w-4 h-4 flex-shrink-0 transition-transform group-hover:rotate-12" />
-    </button>
-  </a>
-</div>
+            {/* CTA Buttons - Mobile Only Optimized */}
+            <div className="animate-fade-in delay-400 flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+              {/* Primary CTA - Mobile optimized */}
+              <AnimatedButton
+                href="/signup"
+                variant="primary"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold shadow-lg sm:shadow-2xl hover:shadow-xl sm:hover:shadow-3xl transition-all duration-300 min-h-[48px] sm:min-h-[44px]"
+              >
+                Join the Guild
+                <ArrowRight className="w-4 h-4 ml-1.5 sm:ml-2 transition-transform group-hover:translate-x-1 flex-shrink-0" />
+              </AnimatedButton>
+
+              {/* Secondary CTA - Mobile optimized */}
+              <a href="/projects" className="w-full sm:w-auto">
+                <button className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border border-white/10 bg-white/5 px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:shadow-lg sm:hover:shadow-xl min-h-[48px] sm:min-h-[44px]">
+                  Browse Projects
+                  <Code2 className="w-4 h-4 flex-shrink-0 transition-transform group-hover:rotate-12" />
+                </button>
+              </a>
+            </div>
 
 
-           
-           
+
+
           </div>
 
           {/* --- RIGHT COLUMN --- */}
           <div className="lg:col-span-5 space-y-6 lg:mt-12">
-            
+
             {/* Stats Card */}
             <div className="animate-fade-in delay-500 relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl">
               {/* Card Glow Effect */}
@@ -148,7 +185,9 @@ export default function GlassmorphismHero() {
                     <Target className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold tracking-tight text-white">10,000+</div>
+                    <div className="text-3xl font-bold tracking-tight text-white">
+                      {loading ? '...' : stats.activeBuilders}
+                    </div>
                     <div className="text-sm text-zinc-400">Active Builders</div>
                   </div>
                 </div>
@@ -157,7 +196,9 @@ export default function GlassmorphismHero() {
                 <div className="space-y-3 mb-8">
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-400">Projects Shipped</span>
-                    <span className="text-white font-medium">500+</span>
+                    <span className="text-white font-medium">
+                      {loading ? '...' : stats.projectsShipped}
+                    </span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800/50">
                     <div className="h-full w-[85%] rounded-full bg-gradient-primary" />
@@ -168,11 +209,20 @@ export default function GlassmorphismHero() {
 
                 {/* Mini Stats Grid */}
                 <div className="grid grid-cols-3 gap-4 text-center">
-                  <StatItem value="50K+" label="Milestones" />
+                  <StatItem
+                    value={loading ? '...' : stats.milestones}
+                    label="Milestones"
+                  />
                   <div className="w-px h-full bg-white/10 mx-auto" />
-                  <StatItem value="$2M+" label="Funding" />
+                  <StatItem
+                    value={loading ? '...' : stats.funding}
+                    label="Funding"
+                  />
                   <div className="w-px h-full bg-white/10 mx-auto" />
-                  <StatItem value="98%" label="Success" />
+                  <StatItem
+                    value={loading ? '...' : stats.successRate}
+                    label="Success"
+                  />
                 </div>
 
                 {/* Tag Pills */}
@@ -199,8 +249,8 @@ export default function GlassmorphismHero() {
             {/* Marquee Card */}
             <div className="animate-fade-in delay-500 relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 py-8 backdrop-blur-xl">
               <h3 className="mb-6 px-8 text-sm font-medium text-zinc-400">Trusted by Builders From</h3>
-              
-              <div 
+
+              <div
                 className="relative flex overflow-hidden"
                 style={{
                   maskImage: "linear-gradient(to right, transparent, black 20%, black 80%, transparent)",
@@ -210,7 +260,7 @@ export default function GlassmorphismHero() {
                 <div className="animate-marquee flex gap-12 whitespace-nowrap px-4">
                   {/* Triple list for seamless loop */}
                   {[...TRUSTED_PLATFORMS, ...TRUSTED_PLATFORMS, ...TRUSTED_PLATFORMS].map((platform, i) => (
-                    <div 
+                    <div
                       key={i}
                       className="flex items-center gap-2 opacity-50 transition-all hover:opacity-100 hover:scale-105 cursor-default grayscale hover:grayscale-0"
                     >

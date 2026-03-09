@@ -16,6 +16,10 @@ const io = new Server(httpServer, {
   },
 });
 
+// Register io singleton so routes can emit events
+const socketLib = require('./lib/io');
+socketLib.setIo(io);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -62,6 +66,14 @@ app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/hackathons', require('./routes/hackathons'));
 app.use('/api/matching', require('./routes/matching'));
 app.use('/api/governance', require('./routes/governance'));
+app.use('/api/stats', require('./routes/stats'));
+app.use('/api/roles', require('./routes/roles'));
+
+// Role-specific routes
+app.use('/api/recruiter', require('./routes/roles/recruiter'));
+app.use('/api/builder', require('./routes/roles/builder'));
+app.use('/api/mentor', require('./routes/roles/mentor'));
+app.use('/api/investor', require('./routes/roles/investor'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -72,10 +84,14 @@ app.get('/health', (req, res) => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Join user's personal notification room
+  socket.on('join-user', ({ userId }) => {
+    socket.join(`user:${userId}`);
+  });
+
   // Join project room for chat
   socket.on('join-project', ({ projectId }) => {
     socket.join(`project-${projectId}`);
-    console.log(`User ${socket.id} joined project ${projectId}`);
   });
 
   // Send message to project chat

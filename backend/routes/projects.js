@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
 const authMiddleware = require('../middleware/auth');
+const socketLib = require('../lib/io');
 
 // Create project
 router.post('/', authMiddleware, async (req, res) => {
@@ -163,6 +164,9 @@ router.post('/:projectId/upvote', authMiddleware, async (req, res) => {
 
     await project.save();
 
+    // Broadcast live upvote count to all viewers of /projects
+    socketLib.emitUpvote(req.params.projectId, project.upvotes);
+
     res.json({
       success: true,
       data: {
@@ -243,6 +247,9 @@ router.post('/:projectId/apply', authMiddleware, async (req, res) => {
       roleName,
       message: message || 'I would like to join your team!',
       read: false,
+    }).then(notification => {
+      // Push live notification to the project creator
+      socketLib.emitNotification(project.creatorId._id.toString(), notification);
     });
 
     console.log(`New application from user ${req.userId} for ${roleName} in project ${project.name}`);
@@ -329,18 +336,19 @@ router.patch('/:projectId/applications/:applicationId', authMiddleware, async (r
 
     await project.save();
 
-    // Create notification for applicant
+    // Create notification for applicant and push live
     const Notification = require('../models/Notification');
-    await Notification.create({
+    const notif = await Notification.create({
       userId: application.userId,
       type: action === 'accept' ? 'application_accepted' : 'application_rejected',
       projectId: project._id,
       projectName: project.name,
       roleName: application.roleName,
-      message: message || (action === 'accept' 
-        ? `Your application for ${application.roleName} has been accepted!` 
+      message: message || (action === 'accept'
+        ? `Your application for ${application.roleName} has been accepted!`
         : `Your application for ${application.roleName} was not accepted this time.`),
     });
+    socketLib.emitNotification(application.userId.toString(), notif);
 
     res.json({
       success: true,
@@ -360,4 +368,41 @@ router.patch('/:projectId/applications/:applicationId', authMiddleware, async (r
   }
 });
 
+// Toggle milestone completed status and broadcast live
+router.patch('/:projectId/milestones/:milestoneId', authMiddleware, async (req, res) => {
+  try {
+    const { projectId, milestoneId } = req.params;
+    const project = await Project.findById(projectId);
+
+    if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+
+    // Only team members or creator can toggle milestones
+    const isMember = project.team.some(m => m.userId.toString() === req.userId)
+      || project.creatorId.toString() === req.userId;
+    if (!isMember) return res.status(403).json({ success: false, message: 'Not a team member' });
+
+    const milestone = project.milestones.id(milestoneId);
+    if (!milestone) return res.status(404).json({ success: false, message: 'Milestone not found' });
+
+    milestone.completed = !milestone.completed;
+    if (milestone.completed) {
+      milestone.completedAt = new Date();
+      milestone.completedBy = req.userId;
+    } else {
+      milestone.completedAt = undefined;
+      milestone.completedBy = undefined;
+    }
+
+    await project.save();
+
+    // Broadcast live update to all project room members
+    socketLib.emitMilestone(projectId, milestone.toObject());
+
+    res.json({ success: true, data: { milestone } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+
 module.exports = router;
+

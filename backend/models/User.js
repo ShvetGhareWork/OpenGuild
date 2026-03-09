@@ -29,10 +29,63 @@ const userSchema = new mongoose.Schema({
   },
   avatar: String,
   bio: String,
-  role: {
+  
+  // RBAC: Multi-role support with active role switching
+  roles: {
+    type: [String],
+    enum: ['builder', 'mentor', 'investor', 'recruiter'],
+    default: ['builder'], // Default role for new users
+    validate: {
+      validator: function(roles) {
+        return roles && roles.length > 0;
+      },
+      message: 'User must have at least one role'
+    }
+  },
+  activeRole: {
     type: String,
     enum: ['builder', 'mentor', 'investor', 'recruiter'],
     default: 'builder',
+    validate: {
+      validator: function(activeRole) {
+        return this.roles && this.roles.includes(activeRole);
+      },
+      message: 'Active role must be one of the user\'s assigned roles'
+    }
+  },
+  roleConfirmed: {
+    type: Boolean,
+    default: false, // Existing users need to confirm role on first login
+  },
+  roleConfirmedAt: Date,
+  
+  // Role-specific data
+  roleData: {
+    recruiter: {
+      company: String,
+      projectsCreated: { type: Number, default: 0 },
+      buildersHired: { type: Number, default: 0 }
+    },
+    builder: {
+      projectsCompleted: { type: Number, default: 0 },
+      specializations: [String],
+      availability: {
+        type: String,
+        enum: ['full-time', 'part-time', 'weekends', 'unavailable'],
+        default: 'part-time'
+      }
+    },
+    mentor: {
+      expertise: [String],
+      projectsMentored: { type: Number, default: 0 },
+      rating: { type: Number, default: 0, min: 0, max: 5 }
+    },
+    investor: {
+      investmentCapacity: Number,
+      investmentsMade: { type: Number, default: 0 },
+      totalInvested: { type: Number, default: 0 },
+      preferredSectors: [String]
+    }
   },
   skills: [
     {
@@ -94,6 +147,9 @@ userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ reputationScore: -1 });
 userSchema.index({ 'skills.name': 1 });
+userSchema.index({ roles: 1 });
+userSchema.index({ activeRole: 1 });
+userSchema.index({ roleConfirmed: 1 });
 
 // Update trustLevel based on reputation
 userSchema.pre('save', function (next) {

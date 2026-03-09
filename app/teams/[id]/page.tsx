@@ -20,7 +20,7 @@ export default function TeamWorkspacePage() {
 
   useEffect(() => {
     fetchTeam();
-    
+
     // Initialize WebSocket
     const newSocket = io(getBackendUrl());
     setSocket(newSocket);
@@ -47,7 +47,7 @@ export default function TeamWorkspacePage() {
   }, [params.id]);
 
   const fetchTeam = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (!token) return;
 
     try {
@@ -85,7 +85,7 @@ export default function TeamWorkspacePage() {
   const createTask = async () => {
     if (!newTask.title) return;
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
 
     try {
       const res = await fetch(`${API_URL}/teams/${params.id}/tasks`, {
@@ -109,7 +109,7 @@ export default function TeamWorkspacePage() {
   };
 
   const updateTaskStatus = async (taskId: string, status: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
 
     try {
       const res = await fetch(`${API_URL}/teams/${params.id}/tasks/${taskId}`, {
@@ -167,8 +167,8 @@ export default function TeamWorkspacePage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-4xl font-regular font-medium">
-               OpenGuild
-              </span>
+              OpenGuild
+            </span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -301,7 +301,7 @@ export default function TeamWorkspacePage() {
                           <Badge
                             variant={
                               task.priority === 'high' ? 'verified' :
-                              task.priority === 'medium' ? 'status' : 'skill'
+                                task.priority === 'medium' ? 'status' : 'skill'
                             }
                             className="text-xs"
                           >

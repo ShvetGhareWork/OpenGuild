@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL, getBackendUrl } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -42,11 +41,8 @@ export default function DashboardPage() {
       }
 
       try {
-        // Fetch user data
-        const userRes = await fetch(`${API_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const userRes = await fetch('http://localhost:5000/api/users/me', {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const userData = await userRes.json();
@@ -59,11 +55,8 @@ export default function DashboardPage() {
 
         setUser(userData.data);
 
-        // Fetch user's projects
-        const projectsRes = await fetch(`${API_URL}/projects?limit=5`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const projectsRes = await fetch('http://localhost:5000/api/projects?limit=5', {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const projectsData = await projectsRes.json();
@@ -258,7 +251,7 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 lg:mb-8">
                 {user?.avatar ? (
                   <img
-                    src={`${getBackendUrl()}${user.avatar}`}
+                    src={`http://localhost:5000${user.avatar}`}
                     alt={displayName}
                     className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full object-cover border-4 border-white/20 shadow-lg flex-shrink-0"
                   />

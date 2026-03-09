@@ -2,7 +2,7 @@
 
 import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
-import { Sparkles, Coins, TrendingUp, TrendingDown, Calendar, Gift, ShoppingBag, LogOut, UserIcon, Zap, Trophy, Code2, Target } from 'lucide-react';
+import { Sparkles, Coins, TrendingUp, TrendingDown, Calendar, Gift, ShoppingBag, LogOut, UserIcon, Zap, Trophy, Code2, Target, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
@@ -79,104 +79,132 @@ export default function TokensPage() {
       />
 
       {/* ================= NAVBAR ================= */}
-      <nav className="glass border-b border-white/10 sticky top-0 z-50 relative">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent"
-          >
-            OpenGuild
-          </Link>
+      <nav className="backdrop-blur-md bg-black/50 border-b border-white/10 sticky top-0 z-50 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* Mobile Hamburger */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="lg:hidden text-gray-300 text-2xl"
-          >
-            ☰
-          </button>
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between py-4 lg:hidden">
+            <Link href="/" className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
+              OpenGuild
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(true)}
+              className="text-gray-300 hover:text-white h-10 w-10 p-0"
+            >
+              ☰
+            </Button>
+          </div>
 
-          {/* Desktop Links */}
-          <div className="hidden lg:flex items-center gap-6">
-            <Link href="/dashboard" className="text-text-secondary hover:text-white">
-              Dashboard
+          {/* Desktop Navbar */}
+          <div className="hidden lg:flex items-center justify-between py-2">
+            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
+              OpenGuild
             </Link>
-            <Link href="/projects" className="text-text-secondary hover:text-white">
-              Projects
-            </Link>
-            <Link href="/reputation" className="text-text-secondary hover:text-white">
-              Reputation
-            </Link>
-            <Link href="/tokens" className="text-white font-semibold">
-              Tokens
-            </Link>
-            <Link href="/matching" className="text-text-secondary hover:text-white">
-              Matching
-            </Link>
-            <Link href="/profile" className="text-text-secondary hover:text-white">
-              Profile
-            </Link>
-            <AnimatedButton href="/projects/create" variant="primary">
-              Create Project
-            </AnimatedButton>
+
+            <div className="flex items-center gap-6">
+              {['Dashboard', 'Projects', 'Reputation', 'Tokens', 'Matching', 'Profile'].map((item) => (
+                <Link
+                  key={item}
+                  href={`/${item.toLowerCase()}`}
+                  className="text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/10"
+                >
+                  {item}
+                </Link>
+              ))}
+
+              <Button variant="ghost" size="sm" onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user_id'); router.push('/'); }} className="text-gray-400 hover:text-white ml-4">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
 
       {/* ================= MOBILE SIDEBAR ================= */}
       <div
-        className={`fixed inset-0 z-50 lg:hidden transition ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
           }`}
       >
+        {/* Backdrop */}
         <div
           onClick={() => setMobileMenuOpen(false)}
-          className="absolute inset-0 bg-black/70"
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         />
 
+        {/* Sidebar Panel */}
         <div
-          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900 via-black to-gray-900
-        border-r border-white/10 backdrop-blur-xl shadow-2xl transform transition-transform duration-300
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900/95 via-black/95 to-gray-900/95
+    border-r border-white/10 shadow-2xl backdrop-blur-xl transform transition-transform duration-300
+    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <div className="p-6 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-10">
+          {/* Glow */}
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 -right-20 w-56 h-56 bg-pink-500/20 rounded-full blur-3xl" />
+
+          {/* Content */}
+          <div className="relative z-10 p-6 h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-10">
               <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
                 OpenGuild
               </span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 text-xl"
+                className="text-gray-400 hover:text-white text-2xl transition"
               >
                 ✕
               </button>
             </div>
 
-            {[
-              { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
-              { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
-              { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
-              { name: 'Tokens', path: '/tokens', icon: <Zap className="w-5 h-5" /> },
-              { name: 'Profile', path: '/profile', icon: <UserIcon className="w-5 h-5" /> },
-            ].map((item) => (
-              <button
-                key={item.name}
-                onClick={() => {
-                  router.push(item.path);
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition"
-              >
-                {item.icon}
-                {item.name}
-              </button>
-            ))}
+            {/* Nav */}
+            <nav className="space-y-3 flex-1">
+              {[
+                { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
+                { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
+                { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
+                { name: 'Tokens', path: '/tokens', icon: <Zap className="w-5 h-5" /> },
+                { name: 'Matching', path: '/matching', icon: <Users className="w-5 h-5" /> },
+                { name: 'Profile', path: '/profile', icon: <UserIcon className="w-5 h-5" /> },
+              ].map((item) => {
+                const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      router.push(item.path);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`group flex items-center gap-4 w-full px-4 py-3 rounded-xl transition-all
+              ${isActive
+                        ? 'bg-white/15 text-white shadow-lg'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                      }`}
+                  >
+                    <span
+                      className={`transition group-hover:scale-110 ${isActive ? 'text-cyan-400' : 'text-gray-400'
+                        }`}
+                    >
+                      {item.icon}
+                    </span>
+                    <span className="font-medium tracking-wide">{item.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-            <button
-              onClick={() => router.push('/')}
-              className="mt-auto flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10"
-            >
-              <LogOut className="w-5 h-5" /> Logout
-            </button>
+            {/* Footer */}
+            <div className="pt-6 border-t border-white/10">
+              <button
+                onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user_id'); router.push('/'); }}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
+              >
+                <LogOut className="w-5 h-5" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>

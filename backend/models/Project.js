@@ -19,6 +19,34 @@ const projectSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  
+  // RBAC: Workflow and role assignments
+  workflowStage: {
+    type: String,
+    enum: ['created', 'builder_selected', 'mentor_assigned', 'funded', 'in_progress', 'review', 'completed'],
+    default: 'created',
+    index: true
+  },
+  recruiter: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  selectedBuilder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  builderSelectedAt: Date,
+  assignedMentor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  mentorAssignedAt: Date,
+  fundedAt: Date,
+  startedAt: Date,
+  completedAt: Date,
   techStack: [String],
   team: [
     {
@@ -120,13 +148,16 @@ const projectSchema = new mongoose.Schema({
   },
 });
 
-// Indexes
 projectSchema.index({ slug: 1 });
 projectSchema.index({ creatorId: 1 });
 projectSchema.index({ upvotes: -1 });
 projectSchema.index({ techStack: 1 });
 projectSchema.index({ status: 1 });
 projectSchema.index({ createdAt: -1 });
+projectSchema.index({ workflowStage: 1 });
+projectSchema.index({ recruiter: 1 });
+projectSchema.index({ selectedBuilder: 1 });
+projectSchema.index({ assignedMentor: 1 });
 
 // Generate slug from name
 projectSchema.pre('save', function (next) {

@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
-import "./globals.css";
+'use client';
 
-export const metadata: Metadata = {
-  title: "OpenGuild - Where Builders Become Legends",
-  description: "Join 10,000+ developers, designers, and founders forming verified teams, shipping real products, and earning reputation that opens doors.",
-};
+import "./globals.css";
+import LenisProvider from "@/components/providers/lenis-provider";
 
 export default function RootLayout({
   children,
@@ -14,9 +11,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <LenisProvider>
+          {children}
+        </LenisProvider>
       </body>
     </html>
   );
 }
-

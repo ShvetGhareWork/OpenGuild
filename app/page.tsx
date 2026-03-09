@@ -17,21 +17,29 @@ export default function LandingPage() {
       <GlassmorphismNavbar />
 
       {/* Hero Section - Glassmorphism */}
-      <GlassmorphismHero />
+      <div>
+        <GlassmorphismHero />
+      </div>
 
       {/* Feature Bento Grid - Replaces Problem & Solution Sections */}
-      <FeatureBentoGrid />
+      <div>
+        <FeatureBentoGrid />
+      </div>
 
       {/* How It Works - Spotlight Cards */}
-      <HowItWorksSpotlight />
+      <div>
+        <HowItWorksSpotlight />
+      </div>
 
       {/* Testimonials Grid */}
-      <TestimonialsGrid />
+      <div>
+        <TestimonialsGrid />
+      </div>
 
       {/* Video Showcase Section */}
       <section className="py-20 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-bg-primary via-bg-secondary to-bg-primary -z-10" />
-        
+
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-display font-semibold mb-4">
@@ -57,7 +65,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-10 -z-10" />
-        
+
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-display font-semibold mb-6">
             Ready to Build Your{" "}

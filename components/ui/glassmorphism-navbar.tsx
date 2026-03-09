@@ -31,14 +31,18 @@ const GlassmorphismNavbar: React.FC<GlassmorphismNavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 w-full z-50">
+    <header className="fixed top-0 w-full z-[9999]">
       <div className="mx-6 pt-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-4xl font-regular font-medium">
-               OpenGuild
+            <div className="bg-black/30 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-2xl">
+              <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-2xl font-regular font-medium">
+                OpenGuild
               </span>
+            </div>
+
+
           </Link>
 
           {/* Desktop Navigation */}
@@ -48,9 +52,8 @@ const GlassmorphismNavbar: React.FC<GlassmorphismNavbarProps> = ({
                 <a
                   key={index}
                   href={link.href}
-                  className={`px-3 py-2 text-sm font-medium hover:text-white transition-colors ${
-                    link.isActive ? 'text-white/90' : 'text-white/80'
-                  }`}
+                  className={`px-3 py-2 text-sm font-medium hover:text-white transition-colors ${link.isActive ? 'text-white/90' : 'text-white/80'
+                    }`}
                 >
                   {link.label}
                 </a>

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Card, Badge } from '@/components/ui';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, ArrowLeft, ArrowUpCircle, Eye, Users, Calendar, Target, Github, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -9,6 +9,7 @@ import { getProjectById } from '@/lib/dummyProjects';
 import toast, { Toaster } from 'react-hot-toast';
 import ProjectChat from '@/components/ProjectChat';
 import { API_URL } from '@/lib/api';
+import { useProjectUpvotes, useMilestoneUpdates } from '@/hooks/useSocket';
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -44,6 +45,27 @@ export default function ProjectDetailPage() {
     fetchUser();
   }, [params.id]);
 
+  // Live upvotes — update counter in real time
+  const handleLiveUpvote = useCallback((data: { projectId: string; upvotes: number }) => {
+    if (data.projectId === params.id) setProject((p: any) => p ? { ...p, upvotes: data.upvotes } : p);
+  }, [params.id]);
+  useProjectUpvotes(handleLiveUpvote);
+
+  // Live milestone updates — refresh milestone state when team checks one off
+  const handleMilestone = useCallback((data: any) => {
+    if (data.projectId === params.id) {
+      setProject((p: any) => {
+        if (!p) return p;
+        const milestones = p.milestones.map((m: any) =>
+          m._id === data.milestone._id ? data.milestone : m
+        );
+        return { ...p, milestones };
+      });
+    }
+  }, [params.id]);
+  useMilestoneUpdates(params.id as string, handleMilestone);
+
+
   const fetchProject = async () => {
     try {
       const res = await fetch(`${API_URL}/projects/${params.id}`);
@@ -71,7 +93,7 @@ export default function ProjectDetailPage() {
   };
 
   const handleUpvote = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (!token) {
       alert('Please login to upvote');
       return;
@@ -128,7 +150,7 @@ export default function ProjectDetailPage() {
       if (data.success) {
         // Add to applied roles
         setAppliedRoles(prev => new Set(prev).add(roleId));
-        
+
         // Show success notification
         toast.success(
           `Application submitted! The team will review your application for ${roleName}.`,
@@ -210,19 +232,19 @@ export default function ProjectDetailPage() {
               <Users className="w-4 h-4" />
               {project.team?.length || 0}
             </div>
-            
+
             {/* Chat Button - Only show for team members */}
-            {user && (project.team?.some((m: any) => 
+            {user && (project.team?.some((m: any) =>
               m.userId?._id === user._id || m.userId === user._id
             ) || project.creatorId?._id === user._id || project.creatorId === user._id) && (
-              <button
-                onClick={() => setShowChat(true)}
-                className="flex items-center gap-2 px-4 py-2 glass rounded-lg border border-white/10 hover:border-accent-violet hover:bg-white/5 transition-all"
-              >
-                <MessageCircle className="w-5 h-5 text-accent-violet" />
-                <span className="font-medium">Team Chat</span>
-              </button>
-            )}
+                <button
+                  onClick={() => setShowChat(true)}
+                  className="flex items-center gap-2 px-4 py-2 glass rounded-lg border border-white/10 hover:border-accent-violet hover:bg-white/5 transition-all"
+                >
+                  <MessageCircle className="w-5 h-5 text-accent-violet" />
+                  <span className="font-medium">Team Chat</span>
+                </button>
+              )}
           </div>
         </header>
 
@@ -259,39 +281,67 @@ export default function ProjectDetailPage() {
               <section>
                 <h2 className="text-xl font-semibold mb-4">Milestones</h2>
                 <div className="space-y-4">
-                  {project.milestones.map((milestone: any, i: number) => (
-                    <Card
-                      key={i}
-                      glass
-                      className={`p-5 border-l-4 ${milestone.completed ? 'border-accent-green' : 'border-accent-yellow'} ${
-                        milestone.completed ? 'bg-accent-green/10' : 'bg-white/3'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <h3 className="font-semibold">{milestone.title}</h3>
-                        {milestone.completed ? (
-                          <Badge variant="verified" className="text-xs px-2 py-0.5">
-                            Done
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-text-tertiary">Upcoming</span>
-                        )}
-                      </div>
+                  {project.milestones.map((milestone: any, i: number) => {
+                    const isTeamMember = user && (
+                      project.team?.some((m: any) => m.userId?._id === user._id || m.userId === user._id)
+                      || project.creatorId?._id === user._id || project.creatorId === user._id
+                    );
 
-                      <p className="text-sm text-text-secondary mt-2 mb-2">
-                        {milestone.description}
-                      </p>
+                    const toggleMilestone = async () => {
+                      const token = localStorage.getItem('auth_token');
+                      if (!token || !isTeamMember) return;
+                      await fetch(`${API_URL}/projects/${params.id}/milestones/${milestone._id}`, {
+                        method: 'PATCH',
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      // Live update handled by useMilestoneUpdates socket hook
+                    };
 
-                      {milestone.deadline && (
-                        <div className="flex items-center gap-2 text-xs text-text-tertiary">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(milestone.deadline).toLocaleDateString()}
+                    return (
+                      <Card
+                        key={i}
+                        glass
+                        className={`p-5 border-l-4 ${milestone.completed ? 'border-accent-green' : 'border-accent-yellow'} ${milestone.completed ? 'bg-accent-green/10' : 'bg-white/3'}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <h3 className="font-semibold">{milestone.title}</h3>
+                          <div className="flex items-center gap-2">
+                            {isTeamMember && (
+                              <button
+                                onClick={toggleMilestone}
+                                className={`text-xs px-2 py-1 rounded-md border transition-all ${milestone.completed
+                                    ? 'border-accent-green/40 text-accent-green hover:bg-accent-green/10'
+                                    : 'border-white/20 text-text-tertiary hover:border-accent-cyan hover:text-accent-cyan'
+                                  }`}
+                              >
+                                {milestone.completed ? '✓ Done' : 'Mark Done'}
+                              </button>
+                            )}
+                            {!isTeamMember && milestone.completed && (
+                              <Badge variant="verified" className="text-xs px-2 py-0.5">Done</Badge>
+                            )}
+                            {!isTeamMember && !milestone.completed && (
+                              <span className="text-xs text-text-tertiary">Upcoming</span>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </Card>
-                  ))}
+
+                        <p className="text-sm text-text-secondary mt-2 mb-2">
+                          {milestone.description}
+                        </p>
+
+                        {milestone.deadline && (
+                          <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(milestone.deadline).toLocaleDateString()}
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
                 </div>
               </section>
+
             )}
           </main>
 
@@ -367,8 +417,8 @@ export default function ProjectDetailPage() {
                             </Badge>
                           ))}
                         </div>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           className="w-full text-sm"
                           onClick={() => handleApply(role.role, role.role)}
                           disabled={applying || appliedRoles.has(role.role)}
@@ -385,8 +435,8 @@ export default function ProjectDetailPage() {
             <Card glass className="p-6 text-center">
               <h3 className="font-medium text-sm mb-1">Ready to join?</h3>
               <p className="text-xs text-text-tertiary mb-4">Apply to become part of the team.</p>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="w-full text-sm"
                 onClick={() => {
                   const firstOpenRole = project.openRoles?.find((r: any) => !r.filled);
@@ -410,8 +460,8 @@ export default function ProjectDetailPage() {
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-2xl font-regular font-bold">
-               OpenGuild
-              </span>
+              OpenGuild
+            </span>
           </Link>
 
           <div className="flex items-center gap-4 sm:gap-6">
@@ -424,7 +474,7 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </nav>
-      
+
       {/* Project Chat */}
       {showChat && user && (
         <ProjectChat

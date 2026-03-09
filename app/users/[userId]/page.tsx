@@ -30,7 +30,7 @@ export default function PublicProfilePage() {
       try {
         const res = await fetch(`${API_URL}/users/${params.userId}/profile`);
         const result = await res.json();
-        
+
         if (result.success) {
           setData(result.data);
         } else {
