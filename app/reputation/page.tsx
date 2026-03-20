@@ -1,21 +1,19 @@
 'use client';
 
-import { Button, Card, Badge } from '@/components/ui';
+import MainLayout from '@/components/MainLayout';
+import { Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
-import { Sparkles, TrendingUp, Award, Target, Calendar, CheckCircle, LogOut, Code2, Trophy, Zap, UserIcon, Users } from 'lucide-react';
+import { Sparkles, TrendingUp, Award, Target, Calendar, CheckCircle, Trophy } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { AnimatedButton } from '@/components/ui/animated-button';
 import { API_URL } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 export default function ReputationPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
 
   useEffect(() => {
     fetchReputationData();
@@ -58,161 +56,23 @@ export default function ReputationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl gradient-text animate-pulse">Loading reputation...</div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-2xl bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent animate-pulse font-bold">
+          Loading reputation...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
-      {/* Flickering Grid Background */}
-      <FlickeringGrid
-        className="z-0 absolute inset-0 w-full h-full"
-        squareSize={4}
-        gridGap={6}
-        color="#a855f7"
-        maxOpacity={0.3}
-        flickerChance={0.1}
-      />
-      {/* ================= NAVBAR ================= */}
-      <nav className="backdrop-blur-md bg-black/50 border-b border-white/10 sticky top-0 z-50 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Mobile Header */}
-          <div className="flex items-center justify-between py-4 lg:hidden">
-            <Link href="/" className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-              OpenGuild
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(true)}
-              className="text-gray-300 hover:text-white h-10 w-10 p-0"
-            >
-              ☰
-            </Button>
-          </div>
-
-          {/* Desktop Navbar */}
-          <div className="hidden lg:flex items-center justify-between py-2">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-              OpenGuild
-            </Link>
-
-            <div className="flex items-center gap-6">
-              {['Dashboard', 'Projects', 'Reputation', 'Tokens', 'Matching', 'Profile'].map((item) => (
-                <Link
-                  key={item}
-                  href={`/${item.toLowerCase()}`}
-                  className="text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/10"
-                >
-                  {item}
-                </Link>
-              ))}
-
-              <Button variant="ghost" size="sm" onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user_id'); router.push('/'); }} className="text-gray-400 hover:text-white ml-4">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* ================= MOBILE SIDEBAR ================= */}
-      <div
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-          }`}
-      >
-        {/* Backdrop */}
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        />
-
-        {/* Sidebar Panel */}
-        <div
-          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900/95 via-black/95 to-gray-900/95
-    border-r border-white/10 shadow-2xl backdrop-blur-xl transform transition-transform duration-300
-    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        >
-          {/* Glow */}
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 -right-20 w-56 h-56 bg-pink-500/20 rounded-full blur-3xl" />
-
-          {/* Content */}
-          <div className="relative z-10 p-6 h-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-10">
-              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-                OpenGuild
-              </span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white text-2xl transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Nav */}
-            <nav className="space-y-3 flex-1">
-              {[
-                { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
-                { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
-                { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
-                { name: 'Tokens', path: '/tokens', icon: <Zap className="w-5 h-5" /> },
-                { name: 'Matching', path: '/matching', icon: <Users className="w-5 h-5" /> },
-                { name: 'Profile', path: '/profile', icon: <UserIcon className="w-5 h-5" /> },
-              ].map((item) => {
-                const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      router.push(item.path);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`group flex items-center gap-4 w-full px-4 py-3 rounded-xl transition-all
-              ${isActive
-                        ? 'bg-white/15 text-white shadow-lg'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                  >
-                    <span
-                      className={`transition group-hover:scale-110 ${isActive ? 'text-cyan-400' : 'text-gray-400'
-                        }`}
-                    >
-                      {item.icon}
-                    </span>
-                    <span className="font-medium tracking-wide">{item.name}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Footer */}
-            <div className="pt-6 border-t border-white/10">
-              <button
-                onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user_id'); router.push('/'); }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
-              >
-                <LogOut className="w-5 h-5" />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <MainLayout gridColor="#a855f7">
       <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-4xl font-display font-bold mb-2">
-            Your <span className="">Reputation</span>
+          <h1 className="text-4xl font-display font-bold mb-2 text-white">
+            Your <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Reputation</span>
           </h1>
-          <p className="text-xl text-text-secondary">
+          <p className="text-xl text-gray-400">
             Track your contributions and skill growth
           </p>
         </div>
@@ -225,18 +85,11 @@ export default function ReputationPage() {
             description={`${data?.reputationScore || 0} points • ${data?.trustLevel || 'novice'} level`}
             Icon={Award}
             background={
-              <FlickeringGrid
-                className="absolute inset-0 w-full h-full"
-                squareSize={4}
-                gridGap={6}
-                color="#00d4ff"
-                maxOpacity={0.2}
-                flickerChance={0.1}
-              />
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10" />
             }
             cta="View Breakdown"
             onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
-            className="lg:row-start-1 lg:row-end-4 lg:col-start-1 lg:col-end-2"
+            className="lg:row-start-1 lg:row-end-4 lg:col-start-1 lg:col-end-2 border-white/10 bg-white/5"
           />
 
           {/* Total Contributions - Medium Card */}
@@ -245,11 +98,11 @@ export default function ReputationPage() {
             description={`${data?.totalContributions || 0} contributions across all projects`}
             Icon={CheckCircle}
             background={
-              <div className="absolute inset-0 bg-gradient-to-br from-accent-green/10 via-transparent to-accent-cyan/10" />
+              <div className="absolute inset-0 bg-emerald-500/5" />
             }
             cta="See All"
             onClick={() => document.getElementById('contributions')?.scrollIntoView({ behavior: 'smooth' })}
-            className="lg:col-start-2 lg:col-end-3 lg:row-start-1 lg:row-end-3"
+            className="lg:col-start-2 lg:col-end-3 lg:row-start-1 lg:row-end-3 border-white/10 bg-white/5"
           />
 
           {/* Contribution Types - Small Card */}
@@ -258,11 +111,11 @@ export default function ReputationPage() {
             description={`${Object.keys(data?.breakdown || {}).length} different types`}
             Icon={TrendingUp}
             background={
-              <div className="absolute inset-0 bg-gradient-to-br from-accent-violet/10 via-transparent to-accent-pink/10" />
+              <div className="absolute inset-0 bg-purple-500/5" />
             }
             cta="View Types"
             onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
-            className="lg:col-start-2 lg:col-end-3 lg:row-start-3 lg:row-end-4"
+            className="lg:col-start-2 lg:col-end-3 lg:row-start-3 lg:row-end-4 border-white/10 bg-white/5"
           />
 
           {/* Verified Skills - Small Card */}
@@ -271,18 +124,11 @@ export default function ReputationPage() {
             description={`${Object.keys(data?.skillGraph || {}).length} skills verified`}
             Icon={Target}
             background={
-              <FlickeringGrid
-                className="absolute inset-0 w-full h-full"
-                squareSize={4}
-                gridGap={6}
-                color="#a855f7"
-                maxOpacity={0.2}
-                flickerChance={0.1}
-              />
+              <div className="absolute inset-0 bg-cyan-500/10" />
             }
             cta="Manage Skills"
             onClick={() => document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' })}
-            className="lg:col-start-3 lg:col-end-4 lg:row-start-1 lg:row-end-2"
+            className="lg:col-start-3 lg:col-end-4 lg:row-start-1 lg:row-end-2 border-white/10 bg-white/5"
           />
 
           {/* Recent Achievement - Medium Card */}
@@ -294,130 +140,123 @@ export default function ReputationPage() {
             }
             Icon={Sparkles}
             background={
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-accent-pink/10 via-accent-violet/5 to-accent-cyan/10" />
-                <div className="absolute top-4 right-4 w-32 h-32 bg-accent-yellow/20 rounded-full blur-3xl" />
-              </div>
+              <div className="absolute inset-0 bg-purple-500/10" />
             }
             cta="View All"
             onClick={() => document.getElementById('contributions')?.scrollIntoView({ behavior: 'smooth' })}
-            className="lg:col-start-3 lg:col-end-4 lg:row-start-2 lg:row-end-4"
+            className="lg:col-start-3 lg:col-end-4 lg:row-start-2 lg:row-end-4 border-white/10 bg-white/5"
           />
         </BentoGrid>
 
         {/* Contribution Breakdown */}
-        <Card glass className="p-8 mb-12" id="breakdown">
-          <h2 className="text-2xl font-display font-bold mb-6">Contribution Breakdown</h2>
+        <Card glass className="p-8 mb-12 border-white/10 bg-white/5" id="breakdown">
+          <h2 className="text-2xl font-display font-bold mb-6 text-white text-center sm:text-left">Contribution Breakdown</h2>
 
           {data?.breakdown && Object.keys(data.breakdown).length > 0 ? (
-            <div className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               {Object.entries(data.breakdown).map(([type, stats]: [string, any]) => (
-                <div key={type} className="p-4 glass rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold capitalize">
+                <div key={type} className="p-4 bg-black/40 border border-white/5 rounded-xl hover:border-purple-500/30 transition-colors group">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-200 capitalize group-hover:text-purple-400 transition-colors">
                       {type.replace(/_/g, ' ')}
                     </h3>
-                    <Badge variant="status">{stats.count} contributions</Badge>
+                    <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30">{stats.count} items</Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-text-secondary">Total Reputation:</span>
-                      <span className="ml-2 font-semibold text-accent-cyan">
-                        +{stats.totalReputation}
-                      </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Total Reputation</span>
+                      <span className="text-emerald-400 font-bold">+{stats.totalReputation}</span>
                     </div>
-                    <div>
-                      <span className="text-text-secondary">Avg Impact:</span>
-                      <span className="ml-2 font-semibold text-accent-violet">
-                        {stats.avgImpact}/100
-                      </span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Avg Impact</span>
+                      <span className="text-purple-400 font-bold">{stats.avgImpact}/100</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center text-text-secondary py-8">
+            <div className="text-center py-12 text-gray-500 italic">
               No contributions yet. Start building to earn reputation!
-            </p>
+            </div>
           )}
         </Card>
 
         {/* Skill Graph */}
-        <Card glass className="p-8 mb-12" id="skills">
-          <h2 className="text-2xl font-display font-bold mb-6">Skill Trust Graph</h2>
+        <Card glass className="p-8 mb-12 border-white/10 bg-white/5" id="skills">
+          <h2 className="text-2xl font-display font-bold mb-6 text-white text-center sm:text-left">Skill Trust Graph</h2>
 
           {data?.skillGraph && Object.keys(data.skillGraph).length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-3 gap-6">
               {Object.entries(data.skillGraph).map(([skill, info]: [string, any]) => (
-                <div key={skill} className="p-4 glass rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">{skill}</h3>
+                <div key={skill} className="p-5 bg-black/40 border border-white/5 rounded-2xl hover:border-cyan-500/30 transition-colors">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-white text-sm">{skill}</h3>
                     {info.verified && (
-                      <Badge variant="verified" className="text-xs">Verified</Badge>
+                      <Badge className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[10px]">VERIFIED</Badge>
                     )}
                   </div>
-                  <div className="mb-2">
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-text-secondary">Level</span>
-                      <span className="font-medium capitalize">{info.level}</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
+                      <span className="text-gray-500">Level</span>
+                      <span className="text-cyan-400">{info.level}</span>
                     </div>
-                    <div className="w-full bg-bg-tertiary rounded-full h-2">
+                    <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-gradient-primary h-2 rounded-full transition-all"
+                        className="bg-gradient-to-r from-cyan-400 to-blue-500 h-full rounded-full transition-all duration-1000"
                         style={{ width: `${info.score}%` }}
                       />
                     </div>
-                  </div>
-                  <div className="text-xs text-text-tertiary">
-                    Trust Score: {info.score}/100
+                    <div className="text-[10px] text-gray-600 font-bold">
+                      TRUST SCORE: {info.score}/100
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center text-text-secondary py-8">
+            <div className="text-center py-12 text-gray-500 italic">
               No skills verified yet. Complete onboarding to add skills!
-            </p>
+            </div>
           )}
         </Card>
 
         {/* Recent Contributions */}
-        <Card glass className="p-8" id="contributions">
-          <h2 className="text-2xl font-display font-bold mb-6">Recent Contributions</h2>
+        <Card glass className="p-8 border-white/10 bg-white/5" id="contributions">
+          <h2 className="text-2xl font-display font-bold mb-6 text-white text-center sm:text-left">Recent Contributions</h2>
 
           {data?.contributions && data.contributions.length > 0 ? (
             <div className="space-y-4">
               {data.contributions.slice(0, 10).map((contribution: any) => (
-                <div key={contribution._id} className="p-4 glass rounded-lg flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 text-white" />
+                <div key={contribution._id} className="p-4 bg-black/40 border border-white/5 rounded-xl flex items-start gap-4 hover:bg-white/5 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0 text-purple-400">
+                    <CheckCircle className="w-6 h-6" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-semibold capitalize">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-white capitalize truncate text-sm sm:text-base">
                           {contribution.type.replace(/_/g, ' ')}
                         </h3>
                         {contribution.description && (
-                          <p className="text-sm text-text-secondary">{contribution.description}</p>
+                          <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{contribution.description}</p>
                         )}
                       </div>
-                      <Badge variant="verified">+{contribution.reputationEarned} rep</Badge>
+                      <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">+{contribution.reputationEarned} REP</Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-text-tertiary">
-                      <div className="flex items-center gap-1">
-                        <Target className="w-3 h-3" />
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs text-gray-600 font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <Target className="w-3.5 h-3.5" />
                         Impact: {contribution.impactScore}/100
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
                         {new Date(contribution.createdAt).toLocaleDateString()}
                       </div>
                       {contribution.projectId && (
                         <Link
                           href={`/projects/${contribution.projectId._id}`}
-                          className="text-accent-cyan hover:underline"
+                          className="text-purple-400 hover:text-purple-300 font-bold"
                         >
                           {contribution.projectId.name}
                         </Link>
@@ -429,7 +268,8 @@ export default function ReputationPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-text-secondary mb-4">No contributions yet</p>
+              <Trophy className="w-16 h-16 text-gray-700 mx-auto mb-4 opacity-50" />
+              <p className="text-gray-500 mb-6 font-medium">You haven't made any contributions yet</p>
               <AnimatedButton href="/projects" variant="primary">
                 Start Contributing
               </AnimatedButton>
@@ -437,6 +277,6 @@ export default function ReputationPage() {
           )}
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }

@@ -367,7 +367,7 @@ export default function CredentialsSection({ user, isOwner, onUpdate }: Props) {
             const data = await res.json();
             if (data.success) {
                 setResume(data.data.resume);
-                setValidationScore(v => Math.min(v + 20, 100));
+                setValidationScore((v: number) => Math.min(v + 20, 100));
                 toast.success('Resume uploaded!');
                 onUpdate?.({ ...user, resume: data.data.resume });
             } else toast.error(data.message || 'Upload failed');

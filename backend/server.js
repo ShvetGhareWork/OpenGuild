@@ -61,6 +61,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/projects', require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/teams', require('./routes/teams'));
 app.use('/api/reputation', require('./routes/reputation'));
 app.use('/api/tokens', require('./routes/tokens'));
@@ -90,46 +91,84 @@ io.on('connection', (socket) => {
     socket.join(`user:${userId}`);
   });
 
-  // Join project room for chat
-  socket.on('join-project', ({ projectId }) => {
-    socket.join(`project-${projectId}`);
+  // Join project room for chat (with membership verification)
+  socket.on('join-project', async ({ projectId, userId }) => {
+    try {
+      const Project = require('./models/Project');
+      const project = await Project.findById(projectId);
+      if (!project) return;
+
+      const isMember = project.team.some(m => m.userId.toString() === userId) || 
+                       project.creatorId.toString() === userId;
+      
+      if (isMember) {
+        socket.join(`project-${projectId}`);
+        console.log(`User ${userId} joined project ${projectId}`);
+      }
+    } catch (err) {
+      console.error('Join project error:', err);
+    }
+  });
+
+  // Typing indicators
+  socket.on('typing', ({ projectId, userId, username }) => {
+    socket.to(`project-${projectId}`).emit('user-typing', { userId, username });
+  });
+
+  socket.on('stop-typing', ({ projectId, userId }) => {
+    socket.to(`project-${projectId}`).emit('user-stop-typing', { userId });
+  });
+
+  // WebRTC Signaling
+  socket.on('call-user', ({ projectId, offer, from, name }) => {
+    socket.to(`project-${projectId}`).emit('incoming-call', { offer, from, name });
+  });
+
+  socket.on('answer-call', ({ projectId, answer, to }) => {
+    socket.to(`project-${projectId}`).emit('call-answered', { answer, to });
+  });
+
+  socket.on('ice-candidate', ({ projectId, candidate, to }) => {
+    socket.to(`project-${projectId}`).emit('ice-candidate', { candidate, to });
+  });
+
+  socket.on('end-call', ({ projectId }) => {
+    socket.to(`project-${projectId}`).emit('call-ended');
   });
 
   // Send message to project chat
-  socket.on('send-message', async ({ projectId, senderId, senderName, content }) => {
+  socket.on('send-message', async ({ projectId, senderId, senderName, content, type = 'text', metadata = {} }) => {
     try {
       const Message = require('./models/Message');
+      const Conversation = require('./models/Conversation');
+      
       const message = await Message.create({
         projectId,
         senderId,
-        senderName,
+        type,
+        metadata,
         content,
       });
+
+      // Update conversation last message
+      await Conversation.findOneAndUpdate(
+        { projectId },
+        { lastMessage: message._id, updatedAt: Date.now() },
+        { upsert: true }
+      );
 
       io.to(`project-${projectId}`).emit('new-message', {
         _id: message._id,
         senderId: message.senderId,
-        senderName: message.senderName,
+        senderName,
         content: message.content,
+        type: message.type,
+        metadata: message.metadata,
         createdAt: message.createdAt,
       });
     } catch (err) {
       console.error('Message send error:', err);
     }
-  });
-
-  // Legacy team support
-  socket.on('join_team', ({ teamId }) => {
-    socket.join(`team_${teamId}`);
-    console.log(`User ${socket.id} joined team ${teamId}`);
-  });
-
-  socket.on('update_task', ({ teamId, taskId, status, updatedBy }) => {
-    io.to(`team_${teamId}`).emit('task_updated', {
-      taskId,
-      status,
-      updatedBy,
-    });
   });
 
   socket.on('disconnect', () => {

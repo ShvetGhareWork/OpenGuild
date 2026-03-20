@@ -3,88 +3,35 @@
 import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import {
-  Sparkles,
   ArrowRight,
   Github,
   Code2,
   Palette,
   Briefcase,
   Target,
-  Clock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { API_URL } from '@/lib/api';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 
 const SKILLS = [
-  'React',
-  'Node.js',
-  'Python',
-  'TypeScript',
-  'JavaScript',
-  'MongoDB',
-  'PostgreSQL',
-  'Next.js',
-  'Vue.js',
-  'Angular',
-  'Express',
-  'Django',
-  'Flask',
-  'FastAPI',
-  'UI/UX Design',
-  'Figma',
-  'Adobe XD',
-  'Photoshop',
-  'Illustrator',
-  'AWS',
-  'Docker',
-  'Kubernetes',
-  'CI/CD',
-  'Git',
-  'GraphQL',
-  'REST APIs',
-  'Machine Learning',
-  'TensorFlow',
-  'PyTorch',
-  'Data Science',
-  'AI',
+  'React', 'Node.js', 'Python', 'TypeScript', 'JavaScript', 'MongoDB', 'PostgreSQL', 
+  'Next.js', 'Vue.js', 'Angular', 'Express', 'Django', 'Flask', 'FastAPI', 
+  'UI/UX Design', 'Figma', 'Adobe XD', 'Photoshop', 'Illustrator', 'AWS', 
+  'Docker', 'Kubernetes', 'CI/CD', 'Git', 'GraphQL', 'REST APIs', 
+  'Machine Learning', 'TensorFlow', 'PyTorch', 'Data Science', 'AI'
 ];
 
 const ROLES = [
-  {
-    value: 'builder',
-    label: 'Builder',
-    icon: Code2,
-    description: 'I want to build projects and gain experience',
-  },
-  {
-    value: 'mentor',
-    label: 'Mentor',
-    icon: Target,
-    description: 'I want to guide and mentor others',
-  },
-  {
-    value: 'investor',
-    label: 'Investor',
-    icon: Briefcase,
-    description: 'I want to discover and fund teams',
-  },
-  {
-    value: 'recruiter',
-    label: 'Recruiter',
-    icon: Palette,
-    description: 'I want to hire talented builders',
-  },
+  { value: 'builder', label: 'Builder', icon: Code2, description: 'Forge products and experience' },
+  { value: 'mentor', label: 'Mentor', icon: Target, description: 'Guide the next generation' },
+  { value: 'investor', label: 'Investor', icon: Briefcase, description: 'Back the masters of code' },
+  { value: 'recruiter', label: 'Recruiter', icon: Palette, description: 'Engineer elite squads' },
 ];
 
 const GOALS = [
-  'Learn new skills',
-  'Build portfolio',
-  'Get hired',
-  'Start a startup',
-  'Freelance work',
-  'Network with builders',
-  'Mentor others',
-  'Find co-founder',
+  'Learn new skills', 'Build portfolio', 'Get hired', 'Start a startup', 
+  'Freelance work', 'Network with builders', 'Mentor others', 'Find co-founder'
 ];
 
 const SKILL_LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'];
@@ -93,437 +40,246 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [userName, setUserName] = useState('');
-
-  // Form state
   const [role, setRole] = useState('builder');
   const [selectedSkills, setSelectedSkills] = useState<Array<{ name: string; level: string }>>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
-  const [externalLinks, setExternalLinks] = useState({
-    github: '',
-    leetcode: '',
-    behance: '',
-    linkedin: '',
-    portfolio: '',
-  });
+  const [externalLinks, setExternalLinks] = useState({ github: '', leetcode: '', behance: '', linkedin: '', portfolio: '' });
   const [bio, setBio] = useState('');
 
-  // Fetch user data on mount (for OAuth users)
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('auth_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
+      if (!token) { router.push('/login'); return; }
       try {
-        const res = await fetch(`${API_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const res = await fetch(`${API_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (data.success && data.data) {
           const user = data.data;
-          setUserEmail(user.email || '');
-          setUserName(user.displayName || '');
-
-          // Pre-fill existing data if any
           if (user.role) setRole(user.role);
-          if (user.skills && user.skills.length > 0) setSelectedSkills(user.skills);
-          if (user.goals && user.goals.length > 0) setSelectedGoals(user.goals);
+          if (user.skills?.length > 0) setSelectedSkills(user.skills);
+          if (user.goals?.length > 0) setSelectedGoals(user.goals);
           if (user.externalLinks) setExternalLinks(prev => ({ ...prev, ...user.externalLinks }));
           if (user.bio) setBio(user.bio);
         }
-      } catch (err) {
-        console.error('Failed to fetch user data:', err);
-      }
+      } catch (err) { console.error(err); }
     };
-
     fetchUserData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const toggleSkill = (skillName: string) => {
     const exists = selectedSkills.find((s) => s.name === skillName);
-    if (exists) {
-      setSelectedSkills(selectedSkills.filter((s) => s.name !== skillName));
-    } else {
-      setSelectedSkills([...selectedSkills, { name: skillName, level: 'intermediate' }]);
-    }
+    if (exists) setSelectedSkills(selectedSkills.filter((s) => s.name !== skillName));
+    else setSelectedSkills([...selectedSkills, { name: skillName, level: 'intermediate' }]);
   };
 
   const updateSkillLevel = (skillName: string, level: string) => {
-    setSelectedSkills(
-      selectedSkills.map((s) =>
-        s.name === skillName ? { ...s, level } : s
-      )
-    );
+    setSelectedSkills(selectedSkills.map((s) => s.name === skillName ? { ...s, level } : s));
   };
 
   const toggleGoal = (goal: string) => {
-    if (selectedGoals.includes(goal)) {
-      setSelectedGoals(selectedGoals.filter((g) => g !== goal));
-    } else {
-      setSelectedGoals([...selectedGoals, goal]);
-    }
+    if (selectedGoals.includes(goal)) setSelectedGoals(selectedGoals.filter((g) => g !== goal));
+    else setSelectedGoals([...selectedGoals, goal]);
   };
 
   const handleComplete = async () => {
     setLoading(true);
-
     try {
-      const token = localStorage.getItem('auth_token'); // Fixed: use 'auth_token' instead of 'token'
-
-      if (!token) {
-        alert('You must be logged in to complete onboarding');
-        router.push('/login');
-        return;
-      }
-
+      const token = localStorage.getItem('auth_token');
+      if (!token) { router.push('/login'); return; }
+      
       const res = await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          role,
-          skills: selectedSkills,
-          goals: selectedGoals,
-          externalLinks,
-          bio,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ role, skills: selectedSkills, goals: selectedGoals, externalLinks, bio }),
       });
 
-      const data = await res.json();
-
-      if (!data.success) {
-        alert('Failed to update profile: ' + (data.error?.message || 'Unknown error'));
-        setLoading(false);
-        return;
+      if ((await res.json()).success) {
+        await fetch(`${API_URL}/users/me`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ onboardingCompleted: true }),
+        });
+        router.push('/dashboard');
       }
-
-      // Mark onboarding as complete
-      await fetch(`${API_URL}/users/me`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          onboardingCompleted: true,
-        }),
-      });
-
-      router.push('/dashboard');
-    } catch (err) {
-      console.error('Onboarding error:', err);
-      alert('Failed to complete onboarding');
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary py-8 px-4 sm:py-12 sm:px-6 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-cyan/20 rounded-full blur-3xl animate-pulse-glow" />
-        <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-violet/20 rounded-full blur-3xl animate-pulse-glow"
-          style={{ animationDelay: '1s' }}
+    <div className="min-h-screen bg-black flex items-center justify-center py-12 px-6 relative overflow-hidden">
+       {/* Flickering Grid Background */}
+        <FlickeringGrid
+            className="z-0 absolute inset-0 w-full h-full"
+            squareSize={4}
+            gridGap={6}
+            color="#06b6d4"
+            maxOpacity={0.2}
+            flickerChance={0.1}
         />
-      </div>
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl w-full relative z-10 transition-all duration-700">
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-10 h-10 text-accent-cyan" />
-            <span className="text-3xl font-display ">OpenGuild</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-display font-bold mb-2">Welcome to the Guild!</h1>
-          <p className="text-lg text-text-secondary">Let’s set up your profile</p>
+        <div className="text-center mb-16">
+           <h1 className="text-4xl md:text-6xl font-display font-black text-white italic tracking-tighter uppercase mb-2">
+              Onboarding <span className="bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">Sequence</span>
+           </h1>
+           <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em]">Sector Authorization Level {step}/4</p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-10 sm:mb-12">
-          <div className="flex items-center justify-between mb-2">
-            {[1, 2, 3, 4].map((s) => (
-              <div
-                key={s}
-                className={`flex-1 h-2 rounded-full mx-1 transition-all ${s <= step ? 'bg-gradient-primary' : 'bg-bg-tertiary'
-                  }`}
-              />
-            ))}
-          </div>
-          <div className="text-center text-sm text-text-secondary">
-            Step {step} of 4
-          </div>
+        {/* Progress System */}
+        <div className="flex gap-2 mb-16 max-w-md mx-auto">
+          {[1, 2, 3, 4].map((s) => (
+            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${s <= step ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-white/5'}`} />
+          ))}
         </div>
 
-        {/* Step 1: Role Selection */}
-        {step === 1 && (
-          <Card glass className="p-6 sm:p-8 animate-fade-in">
-            <h2 className="text-xl sm:text-2xl font-display font-bold mb-6 text-center">
-              What’s your role?
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {ROLES.map((r) => (
-                <div
-                  key={r.value}
-                  onClick={() => setRole(r.value)}
-                  className={`p-5 sm:p-6 rounded-xl border-2 cursor-pointer transition-all ${role === r.value
-                      ? 'border-accent-cyan bg-accent-cyan/10'
-                      : 'border-white/10 hover:border-accent-cyan/50'
-                    }`}
-                >
-                  <r.icon className="w-8 h-8 sm:w-10 sm:h-10 text-accent-cyan mb-3" />
-                  <h3 className="text-lg sm:text-xl font-semibold mb-2">{r.label}</h3>
-                  <p className="text-sm text-text-secondary">{r.description}</p>
-                </div>
-              ))}
-            </div>
-            <Button
-              onClick={() => setStep(2)}
-              className="w-full mt-8 group"
-            >
-              Continue
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Card>
-        )}
+        {/* Dynamic Step Content */}
+        <Card glass className="p-10 md:p-14 border-white/10 bg-black/40 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+           <div className="absolute -top-10 -right-10 opacity-5 grayscale group-hover:grayscale-0 transition-all duration-1000">
+              <Code2 className="w-64 h-64 text-cyan-500" />
+           </div>
 
-        {/* Step 2: Skills */}
-        {step === 2 && (
-          <Card glass className="p-6 sm:p-8 animate-fade-in">
-            <h2 className="text-xl sm:text-2xl font-display font-bold mb-2">What are your skills?</h2>
-            <p className="text-sm sm:text-base text-text-secondary mb-6">
-              Select at least 3 skills
-            </p>
-
-            <div className="flex flex-wrap gap-2 sm:gap-3 mb-6">
-              {SKILLS.map((skill) => (
-                <Badge
-                  key={skill}
-                  variant={selectedSkills.find((s) => s.name === skill) ? 'verified' : 'skill'}
-                  className="cursor-pointer text-xs sm:text-sm px-3 py-1"
-                  onClick={() => toggleSkill(skill)}
-                >
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-
-            {selectedSkills.length > 0 && (
-              <div className="space-y-3 mb-6">
-                <h3 className="font-semibold text-sm sm:text-base">Set your skill levels:</h3>
-                {selectedSkills.map((skill) => (
-                  <div
-                    key={skill.name}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 glass rounded-lg"
-                  >
-                    <span className="font-medium text-sm sm:text-base">{skill.name}</span>
-                    <div className="flex gap-1 sm:gap-2 flex-wrap">
-                      {SKILL_LEVELS.map((level) => (
-                        <button
-                          key={level}
-                          onClick={() => updateSkillLevel(skill.name, level)}
-                          className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm transition-all ${skill.level === level
-                              ? 'bg-accent-cyan text-white'
-                              : 'bg-bg-tertiary text-text-secondary hover:bg-bg-primary'
-                            }`}
-                        >
-                          {level}
-                        </button>
-                      ))}
+           <div className="relative z-10">
+            {step === 1 && (
+              <div className="animate-fade-in">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-10 border-l-4 border-cyan-500 pl-6">Core Specialization</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {ROLES.map((r) => (
+                    <div
+                      key={r.value}
+                      onClick={() => setRole(r.value)}
+                      className={`p-8 rounded-3xl border-2 cursor-pointer transition-all duration-300 flex flex-col items-center text-center ${role === r.value ? 'border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-900/10' : 'border-white/5 bg-white/3 hover:border-white/20'}`}
+                    >
+                      <r.icon className={`w-12 h-12 mb-4 transition-colors ${role === r.value ? 'text-cyan-400' : 'text-gray-600'}`} />
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">{r.label}</h3>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{r.description}</p>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <Button onClick={() => setStep(2)} className="w-full mt-12 h-16 bg-white text-black font-extrabold text-xs uppercase tracking-[0.3em] hover:scale-105 transition-all">Synchronize & Proceed →</Button>
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-              <Button
-                variant="secondary"
-                onClick={() => setStep(1)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button
-                onClick={() => setStep(3)}
-                disabled={selectedSkills.length < 3}
-                className="flex-1 group"
-              >
-                Continue
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </Card>
-        )}
+            {step === 2 && (
+              <div className="animate-fade-in">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2 border-l-4 border-cyan-500 pl-6">Arsenal Loadout</h2>
+                <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest mb-10 pl-7">Select at least 3 verified technologies</p>
+                <div className="flex flex-wrap gap-3 mb-12">
+                  {SKILLS.map((skill) => (
+                    <Badge
+                      key={skill}
+                      className={`cursor-pointer text-[10px] font-black px-4 py-2 rounded-xl lowercase border transition-all ${selectedSkills.find((s) => s.name === skill) ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'bg-white/5 text-gray-600 border-white/5 hover:border-white/20'}`}
+                      onClick={() => toggleSkill(skill)}
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
 
-        {/* Step 3: Goals & Links */}
-        {step === 3 && (
-          <Card glass className="p-6 sm:p-8 animate-fade-in">
-            <h2 className="text-xl sm:text-2xl font-display font-bold mb-2">What are your goals?</h2>
-            <p className="text-sm sm:text-base text-text-secondary mb-6">
-              Select all that apply
-            </p>
+                {selectedSkills.length > 0 && (
+                  <div className="space-y-4 mb-12">
+                    {selectedSkills.map((skill) => (
+                      <div key={skill.name} className="flex items-center justify-between p-4 bg-white/3 border border-white/5 rounded-2xl">
+                        <span className="text-xs font-black text-white uppercase tracking-widest pl-2">{skill.name}</span>
+                        <div className="flex gap-2">
+                          {SKILL_LEVELS.map((level) => (
+                            <button
+                              key={level}
+                              onClick={() => updateSkillLevel(skill.name, level)}
+                              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${skill.level === level ? 'bg-cyan-600 text-white shadow-lg' : 'bg-black/40 text-gray-700 hover:text-white hover:bg-white/5'}`}
+                            >
+                              {level}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-            <div className="flex flex-wrap gap-2 sm:gap-3 mb-8">
-              {GOALS.map((goal) => (
-                <Badge
-                  key={goal}
-                  variant={selectedGoals.includes(goal) ? 'verified' : 'skill'}
-                  className="cursor-pointer text-xs sm:text-sm px-3 py-1"
-                  onClick={() => toggleGoal(goal)}
-                >
-                  {goal}
-                </Badge>
-              ))}
-            </div>
+                <div className="flex gap-4">
+                  <Button variant="ghost" onClick={() => setStep(1)} className="flex-1 h-14 border border-white/5 hover:border-white/20 text-gray-500 uppercase font-black text-[10px] tracking-widest">Previous</Button>
+                  <Button onClick={() => setStep(3)} disabled={selectedSkills.length < 3} className="flex-[2] h-14 bg-white text-black font-extrabold text-xs uppercase tracking-widest">Calibrate Arsenal →</Button>
+                </div>
+              </div>
+            )}
 
-            <h3 className="text-lg sm:text-xl font-semibold mb-4">Connect your profiles (optional)</h3>
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                  <Github className="w-4 h-4" />
-                  GitHub
-                </label>
-                <input
-                  type="url"
-                  value={externalLinks.github}
-                  onChange={(e) =>
-                    setExternalLinks({ ...externalLinks, github: e.target.value })
-                  }
-                  className="w-full glass border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all text-sm sm:text-base"
-                  placeholder="https://github.com/username"
+            {step === 3 && (
+              <div className="animate-fade-in">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2 border-l-4 border-cyan-500 pl-6">Sector Objectives</h2>
+                <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest mb-10 pl-7">Define your progression path</p>
+                <div className="flex flex-wrap gap-3 mb-12">
+                  {GOALS.map((goal) => (
+                    <Badge
+                      key={goal}
+                      className={`cursor-pointer text-[10px] font-black px-5 py-3 rounded-2xl uppercase tracking-tighter border transition-all ${selectedGoals.includes(goal) ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'bg-white/5 text-gray-600 border-white/5'}`}
+                      onClick={() => toggleGoal(goal)}
+                    >
+                      {goal}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="space-y-6">
+                   {['github', 'linkedin', 'portfolio'].map((key) => (
+                      <div key={key}>
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                           {key.toUpperCase()} ID
+                        </label>
+                        <input
+                          type="url"
+                          value={externalLinks[key as keyof typeof externalLinks]}
+                          onChange={(e) => setExternalLinks({ ...externalLinks, [key]: e.target.value })}
+                          className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:border-cyan-500/50 shadow-inner"
+                          placeholder={`https://www.${key}.com/your-id`}
+                        />
+                      </div>
+                   ))}
+                </div>
+
+                <div className="flex gap-4 mt-12">
+                  <Button variant="ghost" onClick={() => setStep(2)} className="flex-1 h-14 border border-white/5 text-gray-500 uppercase font-black text-[10px] tracking-widest">Previous</Button>
+                  <Button onClick={() => setStep(4)} disabled={selectedGoals.length === 0} className="flex-[2] h-14 bg-white text-black font-extrabold text-xs uppercase tracking-widest">Link System →</Button>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="animate-fade-in">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2 border-l-4 border-cyan-500 pl-6">Identity Uplink</h2>
+                <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest mb-10 pl-7">Final broadcast to the ecosystem</p>
+                
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full bg-black/40 border border-white/5 rounded-3xl px-8 py-6 text-sm text-white focus:outline-none focus:border-cyan-500/50 min-h-[180px] leading-relaxed"
+                  placeholder="I am a builder specializing in high-performance architectures..."
+                  maxLength={500}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                  <Code2 className="w-4 h-4" />
-                  LeetCode
-                </label>
-                <input
-                  type="url"
-                  value={externalLinks.leetcode}
-                  onChange={(e) =>
-                    setExternalLinks({ ...externalLinks, leetcode: e.target.value })
-                  }
-                  className="w-full glass border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all text-sm sm:text-base"
-                  placeholder="https://leetcode.com/username"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                  <Palette className="w-4 h-4" />
-                  Portfolio
-                </label>
-                <input
-                  type="url"
-                  value={externalLinks.portfolio}
-                  onChange={(e) =>
-                    setExternalLinks({ ...externalLinks, portfolio: e.target.value })
-                  }
-                  className="w-full glass border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all text-sm sm:text-base"
-                  placeholder="https://yourportfolio.com"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-              <Button
-                variant="secondary"
-                onClick={() => setStep(2)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button
-                onClick={() => setStep(4)}
-                disabled={selectedGoals.length === 0}
-                className="flex-1 group"
-              >
-                Continue
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Step 4: Bio */}
-        {step === 4 && (
-          <Card glass className="p-6 sm:p-8 animate-fade-in">
-            <h2 className="text-xl sm:text-2xl font-display font-bold mb-2">
-              Tell us about yourself
-            </h2>
-            <p className="text-sm sm:text-base text-text-secondary mb-6">
-              Write a short bio (optional)
-            </p>
-
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="w-full glass border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all min-h-[120px] sm:min-h-[150px] text-sm sm:text-base"
-              placeholder="I'm a full-stack developer passionate about building impactful products..."
-              maxLength={500}
-            />
-            <div className="text-right text-xs sm:text-sm text-text-tertiary mt-2">
-              {bio.length}/500 characters
-            </div>
-
-            <div className="mt-6 sm:mt-8 p-4 sm:p-6 glass rounded-lg">
-              <h3 className="font-semibold text-sm sm:text-base mb-3">Profile Summary:</h3>
-              <div className="space-y-2 text-xs sm:text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-text-secondary">Role:</span>
-                  <Badge variant="status" className="text-xs sm:text-sm px-2 py-1">
-                    {role}
-                  </Badge>
+                
+                <div className="mt-12 p-8 bg-white/5 border border-white/5 rounded-[2rem] relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <Target className="w-20 h-20 text-cyan-400" />
+                   </div>
+                   <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-6">Manifest Summary</h3>
+                   <div className="grid grid-cols-2 gap-y-4">
+                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-tighter text-gray-700">Role</span><span className="text-sm font-black text-white uppercase tracking-tight">{role}</span></div>
+                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-tighter text-gray-700">Skills</span><span className="text-sm font-black text-white uppercase tracking-tight">{selectedSkills.length} Verified</span></div>
+                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-tighter text-gray-700">Goals</span><span className="text-sm font-black text-white uppercase tracking-tight">{selectedGoals.length} Targeted</span></div>
+                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-tighter text-gray-700">Links</span><span className="text-sm font-black text-white uppercase tracking-tight">{Object.values(externalLinks).filter(v => v).length} Synchronized</span></div>
+                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-text-secondary">Skills:</span>
-                  <span>{selectedSkills.length} selected</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-text-secondary">Goals:</span>
-                  <span>{selectedGoals.length} selected</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-text-secondary">Links:</span>
-                  <span>
-                    {Object.values(externalLinks).filter((v) => v).length} connected
-                  </span>
+
+                <div className="flex gap-4 mt-12">
+                  <Button variant="ghost" onClick={() => setStep(3)} className="flex-1 h-16 border border-white/5 text-gray-500 uppercase font-black text-[10px] tracking-widest">Previous</Button>
+                  <Button onClick={handleComplete} disabled={loading} className="flex-[2] h-16 bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-xs uppercase tracking-[0.3em] shadow-lg shadow-cyan-900/20 active:scale-95 transition-all">
+                    {loading ? 'FINALIZING...' : 'AUTHORIZE ACCESS →'}
+                  </Button>
                 </div>
               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 sm:mt-8">
-              <Button
-                variant="secondary"
-                onClick={() => setStep(3)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleComplete}
-                disabled={loading}
-                className="flex-1 group"
-              >
-                {loading ? 'Completing...' : 'Complete Setup'}
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </Card>
-        )}
+            )}
+           </div>
+        </Card>
       </div>
     </div>
   );

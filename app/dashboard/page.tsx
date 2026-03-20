@@ -1,5 +1,6 @@
 'use client';
 
+import MainLayout from '@/components/MainLayout';
 import { Button, Card, Badge } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import {
@@ -29,10 +30,9 @@ import { fetchWithAuth, API_URL } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading: userLoading, logout } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -57,10 +57,6 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [user, userLoading, router]);
 
-  const handleLogout = () => {
-    logout();
-  };
-
   if (loading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -74,141 +70,9 @@ export default function DashboardPage() {
   const displayName = user?.displayName || user?.username || 'Builder';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-
-      {/* ================= NAVBAR ================= */}
-      <nav className="backdrop-blur-md bg-black/50 border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Mobile Header */}
-          <div className="flex items-center justify-between py-4 lg:hidden">
-            <Link href="/" className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-              OpenGuild
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(true)}
-              className="text-gray-300 hover:text-white h-10 w-10 p-0"
-            >
-              ☰
-            </Button>
-          </div>
-
-          {/* Desktop Navbar */}
-          <div className="hidden lg:flex items-center justify-between py-2">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-              OpenGuild
-            </Link>
-
-            <div className="flex items-center gap-6">
-              {['Dashboard', 'Projects', 'Reputation', 'Tokens', 'Matching', 'Profile'].map((item) => (
-                <Link
-                  key={item}
-                  href={`/${item.toLowerCase()}`}
-                  className="text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/10"
-                >
-                  {item}
-                </Link>
-              ))}
-
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-400 hover:text-white ml-4">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* ================= MOBILE SIDEBAR ================= */}
-      <div
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-          }`}
-      >
-        {/* Backdrop */}
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        />
-
-        {/* Sidebar Panel */}
-        <div
-          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900/95 via-black/95 to-gray-900/95
-    border-r border-white/10 shadow-2xl backdrop-blur-xl transform transition-transform duration-300
-    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        >
-          {/* Glow */}
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 -right-20 w-56 h-56 bg-pink-500/20 rounded-full blur-3xl" />
-
-          {/* Content */}
-          <div className="relative z-10 p-6 h-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-10">
-              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-                OpenGuild
-              </span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white text-2xl transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Nav */}
-            <nav className="space-y-3 flex-1">
-              {[
-                { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
-                { name: 'Projects', path: '/projects', icon: <Code2 className="w-5 h-5" /> },
-                { name: 'Reputation', path: '/reputation', icon: <Trophy className="w-5 h-5" /> },
-                { name: 'Tokens', path: '/tokens', icon: <Zap className="w-5 h-5" /> },
-                { name: 'Matching', path: '/matching', icon: <Users className="w-5 h-5" /> },
-                { name: 'Profile', path: '/profile', icon: <UserIcon className="w-5 h-5" /> },
-              ].map((item) => {
-                const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      router.push(item.path);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`group flex items-center gap-4 w-full px-4 py-3 rounded-xl transition-all
-              ${isActive
-                        ? 'bg-white/15 text-white shadow-lg'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                  >
-                    <span
-                      className={`transition group-hover:scale-110 ${isActive ? 'text-cyan-400' : 'text-gray-400'
-                        }`}
-                    >
-                      {item.icon}
-                    </span>
-                    <span className="font-medium tracking-wide">{item.name}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Footer */}
-            <div className="pt-6 border-t border-white/10">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
-              >
-                <LogOut className="w-5 h-5" />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 relative z-10">
-        {/* Welcome Header - Responsive typography */}
+    <MainLayout gridColor="#a855f7">
+      <div className="max-w-7xl mx-auto px-6 py-10 relative z-10">
+        {/* ================= HERO SECTION ================= */}
         <div className="mb-6 sm:mb-8 lg:mb-12 text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold mb-2 sm:mb-4 text-white leading-tight">
             Welcome back,{' '}
@@ -409,7 +273,7 @@ export default function DashboardPage() {
             <p className="text-gray-400 text-xs sm:text-sm">View badges</p>
           </button>
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

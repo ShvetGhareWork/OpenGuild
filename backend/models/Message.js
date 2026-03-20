@@ -11,14 +11,25 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  senderName: {
+  type: {
     type: String,
-    required: true,
+    enum: ['text', 'image', 'file', 'call_log'],
+    default: 'text',
   },
-  content: {
-    type: String,
-    required: true,
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
   },
+  readBy: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    readAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

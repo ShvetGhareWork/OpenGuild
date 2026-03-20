@@ -1,5 +1,6 @@
 'use client';
 
+import MainLayout from '@/components/MainLayout';
 import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { Sparkles, Send, Plus, Users, CheckSquare, MessageSquare, Activity } from 'lucide-react';
@@ -26,7 +27,6 @@ export default function TeamWorkspacePage() {
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('Connected to WebSocket');
       newSocket.emit('join_team', { teamId: params.id });
     });
 
@@ -37,8 +37,8 @@ export default function TeamWorkspacePage() {
       }));
     });
 
-    newSocket.on('task_updated', (update) => {
-      fetchTeam(); // Refresh team data
+    newSocket.on('task_updated', () => {
+      fetchTeam();
     });
 
     return () => {
@@ -54,13 +54,8 @@ export default function TeamWorkspacePage() {
       const res = await fetch(`${API_URL}/teams/${params.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
-
-      if (data.success) {
-        setTeam(data.data);
-      }
-
+      if (data.success) setTeam(data.data);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -70,7 +65,6 @@ export default function TeamWorkspacePage() {
 
   const sendMessage = () => {
     if (!message.trim() || !socket) return;
-
     const userId = localStorage.getItem('userId');
     socket.emit('send_message', {
       teamId: params.id,
@@ -78,15 +72,12 @@ export default function TeamWorkspacePage() {
       senderId: userId,
       senderName: 'You',
     });
-
     setMessage('');
   };
 
   const createTask = async () => {
     if (!newTask.title) return;
-
     const token = localStorage.getItem('auth_token');
-
     try {
       const res = await fetch(`${API_URL}/teams/${params.id}/tasks`, {
         method: 'POST',
@@ -96,10 +87,7 @@ export default function TeamWorkspacePage() {
         },
         body: JSON.stringify(newTask),
       });
-
-      const data = await res.json();
-
-      if (data.success) {
+      if (res.ok) {
         fetchTeam();
         setNewTask({ title: '', description: '', priority: 'medium' });
       }
@@ -110,7 +98,6 @@ export default function TeamWorkspacePage() {
 
   const updateTaskStatus = async (taskId: string, status: string) => {
     const token = localStorage.getItem('auth_token');
-
     try {
       const res = await fetch(`${API_URL}/teams/${params.id}/tasks/${taskId}`, {
         method: 'PATCH',
@@ -120,7 +107,6 @@ export default function TeamWorkspacePage() {
         },
         body: JSON.stringify({ status }),
       });
-
       if (res.ok) {
         socket?.emit('update_task', {
           teamId: params.id,
@@ -137,17 +123,20 @@ export default function TeamWorkspacePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl gradient-text animate-pulse">Loading workspace...</div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-2xl bg-gradient-to-r from-violet-400 to-purple-600 bg-clip-text text-transparent animate-pulse font-bold tracking-widest uppercase">
+          Loading Workspace...
+        </div>
       </div>
     );
   }
 
   if (!team) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card glass className="p-12 text-center">
-          <p className="text-xl text-text-secondary">Team not found</p>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <Card glass className="p-16 text-center border-white/10 bg-white/5">
+          <p className="text-xl text-white font-bold mb-2">Workspace Unavailable</p>
+          <p className="text-sm text-gray-500">The team you're looking for was not found.</p>
         </Card>
       </div>
     );
@@ -161,122 +150,100 @@ export default function TeamWorkspacePage() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <nav className="glass border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="bg-gradient-to-br from-accent-cyan via-accent-violet to-accent-pink bg-clip-text text-transparent text-4xl font-regular font-medium">
-              OpenGuild
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
-              Dashboard
-            </Link>
-            <Link href="/projects" className="text-text-secondary hover:text-text-primary transition-colors">
-              Projects
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-6 py-12">
+    <MainLayout gridColor="#8b5cf6">
+      <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-display font-bold mb-2">Team Workspace</h1>
-            <p className="text-xl text-text-secondary">
-              {team.members?.length || 0} members collaborating
+            <h1 className="text-4xl font-display font-bold text-white mb-2 tracking-tight">Team Workspace</h1>
+            <p className="text-xl text-gray-400">
+               <span className="text-violet-400 font-bold">{team.members?.length || 0} Builders</span> collaborating on <span className="text-white italic">{team.projectId?.name || 'Project'}</span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {team.members?.slice(0, 5).map((member: any, i: number) => (
+          <div className="flex -space-x-4">
+            {team.members?.slice(0, 8).map((member: any, i: number) => (
               <div
                 key={i}
-                className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center font-semibold text-sm"
+                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 border-4 border-black flex items-center justify-center font-black text-white shadow-xl relative group cursor-pointer"
                 title={member.userId?.displayName}
               >
                 {member.userId?.displayName?.[0] || 'U'}
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
               </div>
             ))}
-            {team.members?.length > 5 && (
-              <div className="w-10 h-10 rounded-full glass flex items-center justify-center text-sm">
-                +{team.members.length - 5}
+            {team.members?.length > 8 && (
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border-4 border-black flex items-center justify-center text-xs font-black text-gray-400 backdrop-blur-xl">
+                +{team.members.length - 8}
               </div>
             )}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-8">
-          <Button
-            variant={activeTab === 'tasks' ? 'primary' : 'ghost'}
-            onClick={() => setActiveTab('tasks')}
-            className="flex items-center gap-2"
-          >
-            <CheckSquare className="w-4 h-4" />
-            Tasks
-          </Button>
-          <Button
-            variant={activeTab === 'chat' ? 'primary' : 'ghost'}
-            onClick={() => setActiveTab('chat')}
-            className="flex items-center gap-2"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Chat
-          </Button>
-          <Button
-            variant={activeTab === 'activity' ? 'primary' : 'ghost'}
-            onClick={() => setActiveTab('activity')}
-            className="flex items-center gap-2"
-          >
-            <Activity className="w-4 h-4" />
-            Activity
-          </Button>
+        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 w-fit mb-10 overflow-x-auto max-w-full">
+          {[
+            { key: 'tasks', label: 'Kanban', icon: CheckSquare },
+            { key: 'chat', label: 'Team Chat', icon: MessageSquare },
+            { key: 'activity', label: 'Timeline', icon: Activity },
+          ].map((tab) => (
+             <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                activeTab === tab.key 
+                  ? 'bg-violet-600 text-white shadow-lg' 
+                  : 'text-gray-500 hover:text-white'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Tasks Tab - Kanban Board */}
+        {/* Tasks Tab */}
         {activeTab === 'tasks' && (
-          <div>
+          <div className="animate-fade-in">
             {/* New Task Form */}
-            <Card glass className="p-6 mb-8">
-              <h3 className="font-semibold mb-4">Create New Task</h3>
-              <div className="grid md:grid-cols-3 gap-4">
+            <Card glass className="p-8 mb-10 border-white/10 bg-white/5 rounded-3xl overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                 <Plus className="w-24 h-24 text-violet-400 rotate-12" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-tight relative z-10">Deploy New Task</h3>
+              <div className="grid md:grid-cols-12 gap-4 relative z-10">
                 <input
                   type="text"
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  className="glass border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-accent-cyan"
-                  placeholder="Task title..."
+                  className="md:col-span-4 bg-black/40 border border-white/5 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-violet-500/50 text-white placeholder:text-gray-700"
+                  placeholder="What needs to be done?"
                 />
                 <input
                   type="text"
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  className="glass border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-accent-cyan"
-                  placeholder="Description..."
+                  className="md:col-span-5 bg-black/40 border border-white/5 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-violet-500/50 text-white placeholder:text-gray-700"
+                  placeholder="Add more context (optional)..."
                 />
-                <div className="flex gap-2">
+                <div className="md:col-span-3 flex gap-2">
                   <Select
                     selectedKey={newTask.priority}
                     onSelectionChange={(key) => setNewTask({ ...newTask, priority: key as string })}
                     className="flex-1"
                   >
-                    <SelectTrigger className="flex-1 glass border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-accent-cyan">
+                    <SelectTrigger className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-3 text-sm focus:outline-none flex justify-between items-center text-gray-400">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectPopover>
-                      <SelectListBox>
-                        <SelectItem id="low">Low</SelectItem>
-                        <SelectItem id="medium">Medium</SelectItem>
-                        <SelectItem id="high">High</SelectItem>
+                      <SelectListBox className="bg-gray-950 border border-white/10 rounded-xl p-1 overflow-hidden">
+                        <SelectItem id="low" className="p-2 text-xs font-bold uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">Low</SelectItem>
+                        <SelectItem id="medium" className="p-2 text-xs font-bold uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">Medium</SelectItem>
+                        <SelectItem id="high" className="p-2 text-xs font-bold uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">High</SelectItem>
                       </SelectListBox>
                     </SelectPopover>
                   </Select>
-                  <Button onClick={createTask} size="sm">
-                    <Plus className="w-4 h-4" />
+                  <Button onClick={createTask} className="bg-violet-600 hover:bg-violet-500 rounded-2xl px-5 transition-all">
+                    <Plus className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
@@ -285,50 +252,48 @@ export default function TeamWorkspacePage() {
             {/* Kanban Board */}
             <div className="grid md:grid-cols-4 gap-6">
               {Object.entries(tasksByStatus).map(([status, tasks]: [string, any]) => (
-                <Card key={status} glass className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold capitalize">{status.replace('-', ' ')}</h3>
-                    <Badge variant="status">{tasks.length}</Badge>
+                <div key={status} className="space-y-4">
+                  <div className="flex items-center justify-between px-2 mb-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500">{status.replace('-', ' ')}</h3>
+                    <Badge className="bg-white/5 text-gray-600 border-white/5 text-[10px]">{tasks.length}</Badge>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {tasks.map((task: any) => (
-                      <div key={task._id} className="p-3 glass rounded-lg">
-                        <h4 className="font-medium mb-2">{task.title}</h4>
+                      <Card key={task._id} glass className="p-5 border-white/5 bg-white/5 hover:border-violet-500/20 transition-all rounded-2xl group">
+                        <h4 className="font-bold text-white text-sm mb-2 group-hover:text-violet-400 transition-colors uppercase tracking-tight">{task.title}</h4>
                         {task.description && (
-                          <p className="text-sm text-text-secondary mb-2">{task.description}</p>
+                          <p className="text-xs text-gray-500 mb-4 line-clamp-2 leading-relaxed">{task.description}</p>
                         )}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mt-auto">
                           <Badge
-                            variant={
-                              task.priority === 'high' ? 'verified' :
-                                task.priority === 'medium' ? 'status' : 'skill'
-                            }
-                            className="text-xs"
+                            className={`text-[9px] font-black uppercase tracking-tighter ${
+                              task.priority === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                              task.priority === 'medium' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' : 'bg-gray-500/10 text-gray-500 border-white/10'
+                            }`}
                           >
                             {task.priority}
                           </Badge>
                           <Select
                             selectedKey={task.status}
                             onSelectionChange={(key) => updateTaskStatus(task._id, key as string)}
-                            className="text-xs"
                           >
-                            <SelectTrigger className="text-xs glass border border-white/10 rounded px-2 py-1 focus:outline-none">
+                            <SelectTrigger className="text-[9px] font-black uppercase text-gray-600 hover:text-white transition flex items-center gap-1">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectPopover>
-                              <SelectListBox>
-                                <SelectItem id="todo">To Do</SelectItem>
-                                <SelectItem id="in-progress">In Progress</SelectItem>
-                                <SelectItem id="review">Review</SelectItem>
-                                <SelectItem id="done">Done</SelectItem>
+                               <SelectListBox className="bg-gray-950 border border-white/10 rounded-xl p-1 overflow-hidden w-32">
+                                <SelectItem id="todo" className="p-2 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">To Do</SelectItem>
+                                <SelectItem id="in-progress" className="p-2 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">Progress</SelectItem>
+                                <SelectItem id="review" className="p-2 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">Review</SelectItem>
+                                <SelectItem id="done" className="p-2 text-[9px] font-black uppercase tracking-widest hover:bg-white/5 rounded-lg cursor-pointer">Done</SelectItem>
                               </SelectListBox>
                             </SelectPopover>
                           </Select>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
-                </Card>
+                </div>
               ))}
             </div>
           </div>
@@ -336,66 +301,78 @@ export default function TeamWorkspacePage() {
 
         {/* Chat Tab */}
         {activeTab === 'chat' && (
-          <Card glass className="p-6">
-            <div className="h-96 overflow-y-auto mb-4 space-y-3">
-              {team.messages?.map((msg: any, i: number) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-sm font-semibold flex-shrink-0">
-                    {msg.senderId?.displayName?.[0] || 'U'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm">{msg.senderId?.displayName || 'Unknown'}</span>
-                      <span className="text-xs text-text-tertiary">
-                        {new Date(msg.createdAt).toLocaleTimeString()}
-                      </span>
+          <Card glass className="p-0 border-white/10 bg-white/5 rounded-3xl overflow-hidden animate-fade-in">
+            <div className="h-[500px] overflow-y-auto p-8 space-y-6 flex flex-col-reverse">
+               <div className="space-y-6">
+                {[...(team.messages || [])].reverse().map((msg: any, i: number) => (
+                  <div key={i} className="flex items-start gap-4 group/msg">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-black text-white flex-shrink-0 shadow-lg group-hover/msg:scale-110 transition-transform">
+                      {msg.senderId?.displayName?.[0] || 'U'}
                     </div>
-                    <p className="text-sm text-text-secondary">{msg.content}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="font-bold text-white text-xs uppercase tracking-tight">{msg.senderId?.displayName || 'Unknown Builder'}</span>
+                        <span className="text-[9px] font-black text-gray-700 uppercase tracking-widest">
+                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400 bg-white/5 px-4 py-3 rounded-2xl rounded-tl-none border border-white/5 inline-block max-w-[85%] leading-relaxed">{msg.content}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                className="flex-1 glass border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-cyan"
-                placeholder="Type a message..."
-              />
-              <Button onClick={sendMessage}>
-                <Send className="w-4 h-4" />
-              </Button>
+            <div className="p-6 bg-black/40 border-t border-white/5">
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-violet-500/50 text-white placeholder:text-gray-700 shadow-inner"
+                    placeholder="Brief your team members..."
+                  />
+                  <Button onClick={sendMessage} className="bg-violet-600 hover:bg-violet-500 rounded-2xl px-8 shadow-lg shadow-violet-900/20 active:scale-95 transition-all">
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
             </div>
           </Card>
         )}
 
         {/* Activity Tab */}
         {activeTab === 'activity' && (
-          <Card glass className="p-6">
-            <div className="space-y-4">
-              {team.activities?.slice(0, 20).map((activity: any, i: number) => (
-                <div key={i} className="flex items-start gap-3 p-3 glass rounded-lg">
-                  <Activity className="w-5 h-5 text-accent-cyan flex-shrink-0 mt-1" />
+          <Card glass className="p-8 border-white/10 bg-white/5 rounded-3xl animate-fade-in relative overflow-hidden">
+             <div className="absolute -top-10 -right-10 opacity-5 grayscale">
+                <Activity className="w-64 h-64 text-violet-400" />
+             </div>
+             <div className="relative z-10 space-y-6">
+              {team.activities?.slice(0, 30).map((activity: any, i: number) => (
+                <div key={i} className="flex items-start gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl hover:border-violet-500/20 transition-all group">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-600/10 flex items-center justify-center text-violet-400 flex-shrink-0 group-hover:scale-110 transition-transform">
+                     <Activity className="w-5 h-5" />
+                  </div>
                   <div className="flex-1">
-                    <p className="text-sm">
-                      <span className="font-semibold">{activity.userId?.displayName || 'Someone'}</span>
+                    <p className="text-sm text-gray-300 leading-relaxed font-medium">
+                      <span className="text-white font-bold uppercase tracking-tight">{activity.userId?.displayName || 'System'}</span>
                       {' '}{activity.description}
                     </p>
-                    <span className="text-xs text-text-tertiary">
+                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest mt-2 block">
                       {new Date(activity.createdAt).toLocaleString()}
                     </span>
                   </div>
                 </div>
               ))}
               {(!team.activities || team.activities.length === 0) && (
-                <p className="text-center text-text-secondary py-8">No activity yet</p>
+                <div className="text-center py-24 opacity-30 grayscale">
+                    <Activity className="w-16 h-16 mx-auto mb-4" />
+                    <p className="text-xs font-black uppercase tracking-widest">No activity recorded on chain</p>
+                </div>
               )}
             </div>
           </Card>
         )}
       </div>
-    </div>
+    </MainLayout>
   );
 }
