@@ -16,12 +16,16 @@ const notificationSchema = new mongoose.Schema({
     ref: 'Project',
   },
   projectName: String,
-  applicationId: String, // ID of the application in the project's applications array
+  applicationId: String,
   applicantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
   applicantName: String,
+  applicantUsername: String,
+  applicantAvatar: String,
+  applicantReputation: { type: Number, default: 0 },
+  applicantSkills: [String],
   roleName: String,
   message: String,
   read: {
@@ -34,7 +38,6 @@ const notificationSchema = new mongoose.Schema({
   },
 });
 
-// Indexes
 notificationSchema.index({ userId: 1, createdAt: -1 });
 notificationSchema.index({ read: 1 });
 

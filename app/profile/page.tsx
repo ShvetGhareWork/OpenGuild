@@ -28,6 +28,7 @@ import EditProfileModal from '@/components/EditProfileModal';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { API_URL, getBackendUrl } from '@/lib/api';
 import { useNotifications } from '@/hooks/useSocket';
+import CredentialsSection from '@/components/CredentialsSection';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -41,93 +42,60 @@ export default function ProfilePage() {
   const [accepting, setAccepting] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Live notifications — prepend incoming notification and show toast
   const handleLiveNotification = useCallback((n: any) => {
     setNotifications(prev => [n, ...prev]);
     toast.success(n.message || 'New notification', { icon: '🔔', duration: 4000 });
   }, []);
   useNotifications(user?._id, handleLiveNotification);
 
+  function toId(val: any): string {
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object' && val._id) return String(val._id);
+    return String(val);
+  }
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('auth_token');
-
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
+      if (!token) { router.push('/login'); return; }
       try {
-        const res = await fetch(`${API_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const res = await fetch(`${API_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
-
         if (!data.success) {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user_id');
           router.push('/login');
           return;
         }
-
         setUser(data.data);
-
-        // Fetch user's projects and team projects
         try {
-          const projectsRes = await fetch(`${API_URL}/projects`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const projectsRes = await fetch(`${API_URL}/projects`, { headers: { Authorization: `Bearer ${token}` } });
           const projectsData = await projectsRes.json();
           if (projectsData.success) {
             const allProjects = projectsData.data.projects;
-
-            // Filter projects created by this user
-            const userProjects = allProjects.filter(
+            setMyProjects(allProjects.filter(
               (p: any) => p.creatorId?._id === data.data._id || p.creatorId === data.data._id
-            );
-            setMyProjects(userProjects);
-
-            // Filter projects where user is a team member
-            const userTeamProjects = allProjects.filter((p: any) =>
+            ));
+            setTeamProjects(allProjects.filter((p: any) =>
               p.team?.some((member: any) =>
                 (member.userId?._id === data.data._id || member.userId === data.data._id) &&
                 (p.creatorId?._id !== data.data._id && p.creatorId !== data.data._id)
               )
-            );
-            setTeamProjects(userTeamProjects);
+            ));
           }
-        } catch (err) {
-          console.error('Projects fetch error:', err);
-        }
-
-        // Fetch notifications from database
+        } catch (err) { console.error('Projects fetch error:', err); }
         try {
-          const notifRes = await fetch(`${API_URL}/notifications`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const notifRes = await fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${token}` } });
           const notifData = await notifRes.json();
-          if (notifData.success) {
-            setNotifications(notifData.data.notifications);
-          }
-        } catch (err) {
-          console.error('Notifications fetch error:', err);
-        }
-
+          if (notifData.success) setNotifications(notifData.data.notifications);
+        } catch (err) { console.error('Notifications fetch error:', err); }
         setLoading(false);
       } catch (err) {
         console.error('Profile fetch error:', err);
         router.push('/login');
       }
     };
-
     fetchUser();
   }, [router]);
 
@@ -137,84 +105,48 @@ export default function ProfilePage() {
     router.push('/');
   };
 
-  const handleUpdateProfile = (updatedUser: any) => {
-    setUser(updatedUser);
-  };
+  const handleUpdateProfile = (updatedUser: any) => setUser(updatedUser);
 
-  const handleAccept = async (projectId: string, applicationId: string) => {
+  const handleAccept = async (notif: any) => {
     const token = localStorage.getItem('auth_token');
+    const projectId = toId(notif.projectId);
+    const applicationId = toId(notif.applicationId);
+    if (!projectId || !applicationId) { toast.error('Missing data'); return; }
     setAccepting(applicationId);
-
     try {
-      const res = await fetch(
-        `${API_URL}/projects/${projectId}/applications/${applicationId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action: 'accept' }),
-        }
-      );
-
+      const res = await fetch(`${API_URL}/projects/${projectId}/applications/${applicationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'accept' }),
+      });
       const data = await res.json();
       if (data.success) {
-        toast.success('Application accepted! User added to team.');
-        // Refresh notifications
-        const notifRes = await fetch(`${API_URL}/notifications`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const notifData = await notifRes.json();
-        if (notifData.success) {
-          setNotifications(notifData.data.notifications);
-        }
-      } else {
-        toast.error(data.message || 'Failed to accept application');
-      }
-    } catch (err) {
-      toast.error('Error accepting application');
-    } finally {
-      setAccepting(null);
-    }
+        toast.success(`${notif.applicantName || 'Applicant'} accepted! 🎉`);
+        setNotifications(prev => prev.filter(n => toId(n._id) !== toId(notif._id)));
+      } else toast.error(data.message || 'Failed to accept');
+    } catch { toast.error('Error accepting'); }
+    finally { setAccepting(null); }
   };
 
-  const handleReject = async (projectId: string, applicationId: string) => {
+  const handleReject = async (notif: any) => {
     const token = localStorage.getItem('auth_token');
+    const projectId = toId(notif.projectId);
+    const applicationId = toId(notif.applicationId);
+    if (!projectId || !applicationId) { toast.error('Missing data'); return; }
     setAccepting(applicationId);
-
     try {
-      const res = await fetch(
-        `${API_URL}/projects/${projectId}/applications/${applicationId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action: 'reject' }),
-        }
-      );
-
+      const res = await fetch(`${API_URL}/projects/${projectId}/applications/${applicationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'reject' }),
+      });
       const data = await res.json();
       if (data.success) {
         toast.success('Application rejected');
-        // Refresh notifications
-        const notifRes = await fetch(`${API_URL}/notifications`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const notifData = await notifRes.json();
-        if (notifData.success) {
-          setNotifications(notifData.data.notifications);
-        }
-      } else {
-        toast.error(data.message || 'Failed to reject application');
-      }
-    } catch (err) {
-      toast.error('Error rejecting application');
-    } finally {
-      setAccepting(null);
-    }
+        setNotifications(prev => prev.filter(n => toId(n._id) !== toId(notif._id)));
+      } else toast.error(data.message || 'Failed to reject');
+    } catch { toast.error('Error rejecting'); }
+    finally { setAccepting(null); }
   };
 
   if (loading) {
@@ -229,58 +161,34 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-black relative">
-      {/* Flickering Grid Background */}
       <FlickeringGrid
         className="z-0 absolute inset-0 w-full h-full"
-        squareSize={4}
-        gridGap={6}
-        color="#10b981"
-        maxOpacity={0.3}
-        flickerChance={0.1}
+        squareSize={4} gridGap={6} color="#10b981" maxOpacity={0.3} flickerChance={0.1}
       />
 
-      {/* ================= NAVBAR ================= */}
+      {/* ── NAVBAR ── */}
       <nav className="backdrop-blur-md bg-black/50 border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Mobile Header */}
           <div className="flex items-center justify-between py-4 lg:hidden">
             <Link href="/" className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
               OpenGuild
             </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(true)}
-              className="text-gray-300 hover:text-white h-10 w-10 p-0"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(true)} className="text-gray-300 hover:text-white h-10 w-10 p-0">
               ☰
             </Button>
           </div>
-
-          {/* Desktop Navbar */}
           <div className="hidden lg:flex items-center justify-between py-2">
             <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
               OpenGuild
             </Link>
-
             <div className="flex items-center gap-6">
               {['Dashboard', 'Projects', 'Reputation', 'Tokens', 'Matching', 'Profile'].map((item) => (
-                <Link
-                  key={item}
-                  href={`/${item.toLowerCase()}`}
-                  className={`transition px-3 py-2 rounded-lg hover:bg-white/10 ${item === 'Profile' ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'
-                    }`}
-                >
+                <Link key={item} href={`/${item.toLowerCase()}`}
+                  className={`transition px-3 py-2 rounded-lg hover:bg-white/10 ${item === 'Profile' ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'}`}>
                   {item}
                 </Link>
               ))}
-
-              {/* Notifications */}
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 rounded-lg hover:bg-white/10 transition"
-              >
+              <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-lg hover:bg-white/10 transition">
                 <Bell className="w-5 h-5 text-gray-300" />
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
@@ -288,53 +196,25 @@ export default function ProfilePage() {
                   </span>
                 )}
               </button>
-
               <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-400 hover:text-white ml-2">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                <LogOut className="w-4 h-4 mr-2" /> Logout
               </Button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* ================= MOBILE SIDEBAR ================= */}
-      <div
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-          }`}
-      >
-        {/* Backdrop */}
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        />
-
-        {/* Sidebar Panel */}
-        <div
-          className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900/95 via-black/95 to-gray-900/95
-    border-r border-white/10 shadow-2xl backdrop-blur-xl transform transition-transform duration-300
-    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        >
-          {/* Glow */}
+      {/* ── MOBILE SIDEBAR ── */}
+      <div className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+        <div onClick={() => setMobileMenuOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <div className={`absolute left-0 top-0 h-full w-72 bg-gradient-to-br from-gray-900/95 via-black/95 to-gray-900/95 border-r border-white/10 shadow-2xl backdrop-blur-xl transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 -right-20 w-56 h-56 bg-pink-500/20 rounded-full blur-3xl" />
-
-          {/* Content */}
           <div className="relative z-10 p-6 h-full flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between mb-10">
-              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
-                OpenGuild
-              </span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-white text-2xl transition"
-              >
-                ✕
-              </button>
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">OpenGuild</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="text-gray-400 hover:text-white text-2xl transition">✕</button>
             </div>
-
-            {/* Nav */}
             <nav className="space-y-3 flex-1">
               {[
                 { name: 'Dashboard', path: '/dashboard', icon: <Target className="w-5 h-5" /> },
@@ -346,364 +226,243 @@ export default function ProfilePage() {
               ].map((item) => {
                 const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
                 return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      router.push(item.path);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`group flex items-center gap-4 w-full px-4 py-3 rounded-xl transition-all
-              ${isActive
-                        ? 'bg-white/15 text-white shadow-lg'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                  >
-                    <span
-                      className={`transition group-hover:scale-110 ${isActive ? 'text-cyan-400' : 'text-gray-400'
-                        }`}
-                    >
-                      {item.icon}
-                    </span>
+                  <button key={item.name} onClick={() => { router.push(item.path); setMobileMenuOpen(false); }}
+                    className={`group flex items-center gap-4 w-full px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-white/15 text-white shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
+                    <span className={`transition group-hover:scale-110 ${isActive ? 'text-cyan-400' : 'text-gray-400'}`}>{item.icon}</span>
                     <span className="font-medium tracking-wide">{item.name}</span>
                   </button>
                 );
               })}
             </nav>
-
-            {/* Notifications Button */}
-            <button
-              onClick={() => {
-                setShowNotifications(true);
-                setMobileMenuOpen(false);
-              }}
-              className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition mb-3"
-            >
-              <span className="flex items-center gap-4">
-                <Bell className="w-5 h-5" />
-                <span className="font-medium tracking-wide">Notifications</span>
-              </span>
+            <button onClick={() => { setShowNotifications(true); setMobileMenuOpen(false); }}
+              className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition mb-3">
+              <span className="flex items-center gap-4"><Bell className="w-5 h-5" /><span className="font-medium tracking-wide">Notifications</span></span>
               {notifications.length > 0 && (
-                <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {notifications.length}
-                </span>
+                <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{notifications.length}</span>
               )}
             </button>
-
-            {/* Footer */}
             <div className="pt-6 border-t border-white/10">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition"
-              >
-                <LogOut className="w-5 h-5" />
-                Logout
+              <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition">
+                <LogOut className="w-5 h-5" /> Logout
               </button>
             </div>
           </div>
         </div>
       </div>
 
-
-      {/* Notifications Dropdown */}
-      {
-        showNotifications && (
-          <div className="fixed top-20 right-4 sm:right-8 w-80 sm:w-96 max-h-96 overflow-y-auto glass border border-white/20 rounded-xl p-4 z-50 backdrop-blur-md shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-text-primary">Notifications</h3>
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="text-text-tertiary hover:text-text-primary"
-              >
-                ✕
-              </button>
+      {/* ── NOTIFICATIONS DROPDOWN ── */}
+      {showNotifications && (
+        <div className="fixed top-20 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-96 max-h-[480px] flex flex-col glass border border-white/20 rounded-xl z-50 backdrop-blur-md shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-text-primary text-sm">Notifications</h3>
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/30 font-bold">
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              )}
             </div>
-
+            <button onClick={() => setShowNotifications(false)} className="text-text-tertiary hover:text-text-primary transition text-lg leading-none">✕</button>
+          </div>
+          <div className="overflow-y-auto flex-1">
             {notifications.length > 0 ? (
-              <div className="space-y-3">
-                {notifications.map((notif: any, i: number) => (
-                  <div
-                    key={i}
-                    className="p-3 glass rounded-lg border border-white/10 hover:border-accent-cyan/30 transition-all"
-                  >
+              <div className="p-3 space-y-2">
+                {notifications.slice(0, 5).map((notif: any, i: number) => (
+                  <div key={i} className="p-3 glass rounded-lg border border-white/10 hover:border-accent-cyan/30 transition-all">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-accent-cyan/20 flex items-center justify-center flex-shrink-0">
                         <Bell className="w-4 h-4 text-accent-cyan" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         {notif.type === 'application_received' && (
                           <>
-                            <p className="text-sm text-text-primary font-medium mb-1">
-                              New application for <span className="text-accent-cyan">{notif.roleName}</span>
+                            <p className="text-sm text-text-primary font-medium mb-0.5 truncate">
+                              <span className="text-accent-cyan">{notif.applicantName || 'Someone'}</span> applied for{' '}
+                              <span className="text-white">{notif.roleName}</span>
                             </p>
-                            <p className="text-xs text-text-secondary mb-2">
-                              Project: {notif.projectName}
-                            </p>
-                            {notif.message && (
-                              <p className="text-xs text-text-tertiary italic mb-2">
-                                "{notif.message}"
-                              </p>
-                            )}
-                            {notif.applicationId ? (
-                              <div className="flex gap-2 mt-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAccept(notif.projectId, notif.applicationId)}
-                                  disabled={accepting === notif.applicationId}
-                                  className="text-xs px-3 py-1"
-                                >
-                                  {accepting === notif.applicationId ? '...' : '✓ Accept'}
+                            <p className="text-xs text-text-secondary truncate mb-2">{notif.projectName}</p>
+                            {notif.applicationId && (
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleAccept(notif)} disabled={accepting === toId(notif.applicationId)} className="text-xs px-3 py-1">
+                                  {accepting === toId(notif.applicationId) ? '...' : '✓ Accept'}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => handleReject(notif.projectId, notif.applicationId)}
-                                  disabled={accepting === notif.applicationId}
-                                  className="text-xs px-3 py-1"
-                                >
-                                  {accepting === notif.applicationId ? '...' : '✗ Reject'}
+                                <Button size="sm" variant="secondary" onClick={() => handleReject(notif)} disabled={accepting === toId(notif.applicationId)} className="text-xs px-3 py-1">
+                                  {accepting === toId(notif.applicationId) ? '...' : '✗ Reject'}
                                 </Button>
                               </div>
-                            ) : (
-                              <p className="text-xs text-text-tertiary mt-2 italic">
-                                Old notification - please check project page to manage applications
-                              </p>
                             )}
                           </>
                         )}
                         {notif.type === 'application_accepted' && (
-                          <>
-                            <p className="text-sm text-text-primary font-medium mb-1">
-                              🎉 Application Accepted!
-                            </p>
-                            <p className="text-xs text-text-secondary mb-2">
-                              You've been accepted for <span className="text-accent-cyan">{notif.roleName}</span> at {notif.projectName}
-                            </p>
-                            {notif.message && (
-                              <p className="text-xs text-text-tertiary italic">
-                                "{notif.message}"
-                              </p>
-                            )}
-                          </>
+                          <><p className="text-sm text-green-400 font-medium mb-0.5">🎉 Application Accepted!</p>
+                            <p className="text-xs text-text-secondary truncate">{notif.roleName} · {notif.projectName}</p></>
                         )}
                         {notif.type === 'application_rejected' && (
-                          <>
-                            <p className="text-sm text-text-primary font-medium mb-1">
-                              Application Update
-                            </p>
-                            <p className="text-xs text-text-secondary mb-2">
-                              Your application for <span className="text-accent-cyan">{notif.roleName}</span> at {notif.projectName}
-                            </p>
-                            {notif.message && (
-                              <p className="text-xs text-text-tertiary italic">
-                                "{notif.message}"
-                              </p>
-                            )}
-                          </>
+                          <><p className="text-sm text-text-primary font-medium mb-0.5">Application Update</p>
+                            <p className="text-xs text-text-secondary truncate">{notif.roleName} · {notif.projectName}</p></>
                         )}
-                        <p className="text-xs text-text-tertiary mt-2">
-                          {new Date(notif.createdAt).toLocaleDateString()}
-                        </p>
+                        <p className="text-xs text-text-tertiary mt-1">{new Date(notif.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <Link
-                      href={`/projects/${notif.projectId}`}
-                      className="block mt-2 text-xs text-accent-cyan hover:underline"
-                    >
-                      View Project →
-                    </Link>
                   </div>
                 ))}
+                {notifications.length > 5 && (
+                  <p className="text-xs text-center text-gray-500 py-1">+{notifications.length - 5} more</p>
+                )}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Bell className="w-12 h-12 text-text-tertiary mx-auto mb-3 opacity-50" />
+              <div className="text-center py-10">
+                <Bell className="w-10 h-10 text-text-tertiary mx-auto mb-3 opacity-40" />
                 <p className="text-text-tertiary text-sm">No new notifications</p>
               </div>
             )}
           </div>
-        )
-      }
+          <div className="flex-shrink-0 border-t border-white/10">
+            <button onClick={() => { setShowNotifications(false); router.push('/notifications'); }}
+              className="w-full py-3 text-sm font-medium text-cyan-400 hover:text-cyan-300 hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+              <Bell className="w-4 h-4" /> View All Notifications <span className="text-xs">→</span>
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* ── MAIN CONTENT ── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
+
         {/* Profile Header */}
-        <div className="mb-8 sm:mb-12">
+        <div className="mb-8 sm:mb-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {user?.avatar ? (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-accent-cyan">
-                  <img
-                    src={`${getBackendUrl()}${user.avatar}`}
-                    alt={displayName}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-accent-cyan flex-shrink-0">
+                  <img src={`${getBackendUrl()}${user.avatar}`} alt={displayName} className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-primary flex items-center justify-center text-white text-3xl sm:text-4xl font-bold">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-primary flex items-center justify-center text-white text-3xl sm:text-4xl font-bold flex-shrink-0">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
               <div>
-                <h1 className="text-3xl sm:text-4xl font-display font-bold mb-1">
-                  {displayName}
-                </h1>
-                <p className="text-text-secondary flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  {user?.email}
+                <h1 className="text-2xl sm:text-4xl font-display font-bold mb-1">{displayName}</h1>
+                <p className="text-text-secondary flex items-center gap-2 text-sm sm:text-base">
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate max-w-[200px] sm:max-w-none">{user?.email}</span>
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Button variant="secondary" size="sm" onClick={() => setShowEditModal(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Profile
+                <Edit className="w-4 h-4 mr-2" /> Edit Profile
               </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
+              <Button variant="ghost" size="sm"><Settings className="w-4 h-4" /></Button>
             </div>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-10">
           <Card glass className="p-4 sm:p-6 text-center">
-            <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-accent-cyan mx-auto mb-2 sm:mb-3" />
-            <div className="text-2xl sm:text-3xl font-bold mb-1">
-              {user?.reputationScore ?? 0}
-            </div>
+            <Trophy className="w-7 h-7 sm:w-10 sm:h-10 text-accent-cyan mx-auto mb-2" />
+            <div className="text-xl sm:text-3xl font-bold mb-1">{user?.reputationScore ?? 0}</div>
             <div className="text-xs sm:text-sm text-text-secondary">Reputation</div>
-            <Badge variant="verified" className="mt-2 text-xs px-2 py-1">
-              {user?.trustLevel ?? 'Novice'}
-            </Badge>
+            <Badge variant="verified" className="mt-2 text-xs px-2 py-1">{user?.trustLevel ?? 'Novice'}</Badge>
           </Card>
-
           <Card glass className="p-4 sm:p-6 text-center">
-            <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-accent-violet mx-auto mb-2 sm:mb-3" />
-            <div className="text-2xl sm:text-3xl font-bold mb-1">
-              {user?.tokenBalance ?? 0}
-            </div>
+            <Sparkles className="w-7 h-7 sm:w-10 sm:h-10 text-accent-violet mx-auto mb-2" />
+            <div className="text-xl sm:text-3xl font-bold mb-1">{user?.tokenBalance ?? 0}</div>
             <div className="text-xs sm:text-sm text-text-secondary">Tokens</div>
           </Card>
-
           <Card glass className="p-4 sm:p-6 text-center">
-            <Code2 className="w-8 h-8 sm:w-10 sm:h-10 text-accent-blue mx-auto mb-2 sm:mb-3" />
-            <div className="text-2xl sm:text-3xl font-bold mb-1">
-              {user?.skills?.length ?? 0}
-            </div>
+            <Code2 className="w-7 h-7 sm:w-10 sm:h-10 text-accent-blue mx-auto mb-2" />
+            <div className="text-xl sm:text-3xl font-bold mb-1">{user?.skills?.length ?? 0}</div>
             <div className="text-xs sm:text-sm text-text-secondary">Skills</div>
           </Card>
-
           <Card glass className="p-4 sm:p-6 text-center">
-            <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-accent-pink mx-auto mb-2 sm:mb-3" />
-            <div className="text-2xl sm:text-3xl font-bold mb-1">
+            <Calendar className="w-7 h-7 sm:w-10 sm:h-10 text-accent-pink mx-auto mb-2" />
+            <div className="text-lg sm:text-2xl font-bold mb-1">
               {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
             </div>
             <div className="text-xs sm:text-sm text-text-secondary">Joined</div>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-            {/* About Section */}
+        {/* ── 3-COLUMN GRID ─────────────────────────────────────────────────────── */}
+        {/* Mobile: single column stacked
+            Tablet (md): 2 columns — left content + right sidebar
+            Desktop (lg): 3 columns — left content | center credentials | right sidebar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-[1fr_380px_260px] gap-6 sm:gap-8 items-start">
+
+          {/* ── LEFT COLUMN: About / Skills / Goals / Projects ── */}
+          <div className="md:col-span-2 lg:col-span-1 space-y-6">
+
+            {/* About */}
             <Card glass className="p-5 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-accent-cyan" />
-                About
+              <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-accent-cyan" /> About
               </h2>
-              {user?.bio ? (
-                <p className="text-text-secondary text-sm sm:text-base leading-relaxed">
-                  {user.bio}
-                </p>
-              ) : (
-                <p className="text-text-tertiary italic text-sm sm:text-base">
-                  No bio added yet. Click "Edit Profile" to add one.
-                </p>
-              )}
+              {user?.bio
+                ? <p className="text-text-secondary text-sm leading-relaxed">{user.bio}</p>
+                : <p className="text-text-tertiary italic text-sm">No bio added yet. Click "Edit Profile" to add one.</p>
+              }
             </Card>
 
-            {/* Skills Section */}
+            {/* Skills */}
             <Card glass className="p-5 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-accent-cyan" />
-                Skills & Expertise
+              <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-accent-cyan" /> Skills & Expertise
               </h2>
               {user?.skills && user.skills.length > 0 ? (
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex flex-wrap gap-2">
                   {user.skills.map((skill: any, i: number) => (
-                    <Badge
-                      key={i}
-                      variant={skill.verified ? 'verified' : 'skill'}
-                      className="text-xs sm:text-sm px-3 py-1"
-                    >
-                      {skill.name} • {skill.level}
-                      {skill.verified && ' ✓'}
+                    <Badge key={i} variant={skill.verified ? 'verified' : 'skill'} className="text-xs px-3 py-1">
+                      {skill.name} • {skill.level}{skill.verified && ' ✓'}
                     </Badge>
                   ))}
                 </div>
               ) : (
-                <p className="text-text-tertiary italic text-sm sm:text-base">
-                  No skills added yet.
-                </p>
+                <p className="text-text-tertiary italic text-sm">No skills added yet.</p>
               )}
             </Card>
 
-            {/* Goals Section */}
+            {/* Goals */}
             {user?.goals && user.goals.length > 0 && (
               <Card glass className="p-5 sm:p-6">
-                <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
-                  <Target className="w-5 h-5 sm:w-6 sm:h-6 text-accent-cyan" />
-                  Goals
+                <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-accent-cyan" /> Goals
                 </h2>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex flex-wrap gap-2">
                   {user.goals.map((goal: string, i: number) => (
-                    <Badge key={i} variant="status" className="text-xs sm:text-sm px-3 py-1">
-                      {goal}
-                    </Badge>
+                    <Badge key={i} variant="status" className="text-xs px-3 py-1">{goal}</Badge>
                   ))}
                 </div>
               </Card>
             )}
 
-            {/* My Projects Section */}
+            {/* My Projects */}
             <Card glass className="p-5 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
-                <Code2 className="w-5 h-5 sm:w-6 sm:h-6 text-accent-cyan" />
-                My Projects
+              <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
+                <Code2 className="w-5 h-5 text-accent-cyan" /> My Projects
               </h2>
               {myProjects.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {myProjects.map((project: any) => (
-                    <Link
-                      key={project._id}
-                      href={`/projects/${project._id}`}
-                      className="block p-4 glass rounded-lg hover:bg-white/10 transition-all border border-white/5 hover:border-accent-cyan/30"
-                    >
+                    <Link key={project._id} href={`/projects/${project._id}`}
+                      className="block p-4 glass rounded-lg hover:bg-white/10 transition-all border border-white/5 hover:border-accent-cyan/30">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-text-primary mb-1">
-                            {project.name}
-                          </h3>
-                          <p className="text-sm text-text-secondary line-clamp-2 mb-2">
-                            {project.description}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="status" className="text-xs px-2 py-0.5">
-                              {project.status}
-                            </Badge>
-                            {project.techStack?.slice(0, 3).map((tech: string, i: number) => (
-                              <Badge key={i} variant="skill" className="text-xs px-2 py-0.5">
-                                {tech}
-                              </Badge>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-text-primary mb-1 truncate">{project.name}</h3>
+                          <p className="text-xs text-text-secondary line-clamp-2 mb-2">{project.description}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge variant="status" className="text-xs px-2 py-0.5">{project.status}</Badge>
+                            {project.techStack?.slice(0, 2).map((tech: string, i: number) => (
+                              <Badge key={i} variant="skill" className="text-xs px-2 py-0.5">{tech}</Badge>
                             ))}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-text-tertiary mb-1">
-                            {project.team?.length || 0} members
-                          </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-xs text-text-tertiary">{project.team?.length || 0} members</div>
                           {project.applications?.filter((a: any) => a.status === 'pending').length > 0 && (
-                            <Badge variant="status" className="text-xs px-2 py-0.5 bg-accent-pink/20 text-accent-pink">
+                            <Badge variant="status" className="text-xs px-2 py-0.5 bg-accent-pink/20 text-accent-pink mt-1">
                               {project.applications.filter((a: any) => a.status === 'pending').length} new
                             </Badge>
                           )}
@@ -713,112 +472,89 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Code2 className="w-12 h-12 text-text-tertiary mx-auto mb-3 opacity-50" />
-                  <p className="text-text-tertiary italic text-sm sm:text-base mb-4">
-                    No projects created yet.
-                  </p>
-                  <Link href="/projects/create">
-                    <Button size="sm">
-                      Create Your First Project
-                    </Button>
-                  </Link>
+                <div className="text-center py-6">
+                  <Code2 className="w-10 h-10 text-text-tertiary mx-auto mb-3 opacity-50" />
+                  <p className="text-text-tertiary italic text-sm mb-4">No projects created yet.</p>
+                  <Link href="/projects/create"><Button size="sm">Create Your First Project</Button></Link>
                 </div>
               )}
             </Card>
 
-            {/* Projects I'm Working On */}
+            {/* Contributing To */}
             <Card glass className="p-5 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-display font-bold mb-4 flex items-center gap-2">
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-accent-violet" />
-                Projects I'm Working On
+              <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-accent-violet" /> Projects I'm Working On
               </h2>
               {teamProjects.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {teamProjects.map((project: any) => {
                     const myRole = project.team?.find(
-                      (m: any) => (m.userId?._id === user._id || m.userId === user._id)
+                      (m: any) => m.userId?._id === user._id || m.userId === user._id
                     )?.role;
-
                     return (
-                      <Link
-                        key={project._id}
-                        href={`/projects/${project._id}`}
-                        className="block p-4 glass rounded-lg hover:bg-white/10 transition-all border border-white/5 hover:border-accent-violet/30"
-                      >
+                      <Link key={project._id} href={`/projects/${project._id}`}
+                        className="block p-4 glass rounded-lg hover:bg-white/10 transition-all border border-white/5 hover:border-accent-violet/30">
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-text-primary mb-1">
-                              {project.name}
-                            </h3>
-                            <p className="text-sm text-text-secondary line-clamp-2 mb-2">
-                              {project.description}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              <Badge variant="verified" className="text-xs px-2 py-0.5">
-                                Your Role: {myRole}
-                              </Badge>
-                              <Badge variant="status" className="text-xs px-2 py-0.5">
-                                {project.status}
-                              </Badge>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-text-primary mb-1 truncate">{project.name}</h3>
+                            <p className="text-xs text-text-secondary line-clamp-2 mb-2">{project.description}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              <Badge variant="verified" className="text-xs px-2 py-0.5">Role: {myRole}</Badge>
+                              <Badge variant="status" className="text-xs px-2 py-0.5">{project.status}</Badge>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xs text-text-tertiary mb-1">
-                              {project.team?.length || 0} members
-                            </div>
-                          </div>
+                          <div className="text-xs text-text-tertiary flex-shrink-0">{project.team?.length || 0} members</div>
                         </div>
                       </Link>
                     );
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <User className="w-12 h-12 text-text-tertiary mx-auto mb-3 opacity-50" />
-                  <p className="text-text-tertiary italic text-sm sm:text-base">
-                    Not part of any team yet.
-                  </p>
+                <div className="text-center py-6">
+                  <User className="w-10 h-10 text-text-tertiary mx-auto mb-3 opacity-50" />
+                  <p className="text-text-tertiary italic text-sm">Not part of any team yet.</p>
                 </div>
               )}
             </Card>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6 sm:space-y-8">
-            {/* Role & Info */}
-            <Card glass className="p-5 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-display font-bold mb-4">
-                Profile Info
-              </h2>
+          {/* ── CENTER COLUMN: Credentials (full width on mobile/tablet, center on desktop) ── */}
+          {/* On mobile: renders after left column naturally
+              On md: spans full 2 cols below left+right, then right sidebar
+              On lg: sits in the middle column */}
+          <div className="md:col-span-2 lg:col-span-1 order-last md:order-none">
+            <CredentialsSection
+              user={user}
+              isOwner={true}
+              onUpdate={handleUpdateProfile}
+            />
+          </div>
+
+          {/* ── RIGHT COLUMN: Profile Info / Links / Achievements ── */}
+          <div className="md:col-span-1 lg:col-span-1 space-y-6 md:row-start-1 md:col-start-3 lg:row-start-auto lg:col-start-auto">
+
+            {/* Profile Info */}
+            <Card glass className="p-5">
+              <h2 className="text-base sm:text-lg font-display font-bold mb-4">Profile Info</h2>
               <div className="space-y-3">
                 <div>
-                  <div className="text-xs sm:text-sm text-text-secondary mb-1">Role</div>
-                  <Badge variant="status" className="text-xs sm:text-sm px-3 py-1 capitalize">
-                    {user?.role ?? 'Builder'}
-                  </Badge>
+                  <div className="text-xs text-text-secondary mb-1">Role</div>
+                  <Badge variant="status" className="text-xs px-3 py-1 capitalize">{user?.role ?? 'Builder'}</Badge>
                 </div>
                 <div>
-                  <div className="text-xs sm:text-sm text-text-secondary mb-1">Username</div>
-                  <div className="text-sm sm:text-base text-text-primary">@{user?.username}</div>
+                  <div className="text-xs text-text-secondary mb-1">Username</div>
+                  <div className="text-sm text-text-primary">@{user?.username}</div>
                 </div>
                 <div>
-                  <div className="text-xs sm:text-sm text-text-secondary mb-1">Member Since</div>
-                  <div className="text-sm sm:text-base text-text-primary">
-                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric'
-                    }) : 'N/A'}
+                  <div className="text-xs text-text-secondary mb-1">Member Since</div>
+                  <div className="text-sm text-text-primary">
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs sm:text-sm text-text-secondary mb-1">Last Active</div>
-                  <div className="text-sm sm:text-base text-text-primary">
-                    {user?.lastActiveAt ? new Date(user.lastActiveAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
-                    }) : 'N/A'}
+                  <div className="text-xs text-text-secondary mb-1">Last Active</div>
+                  <div className="text-sm text-text-primary">
+                    {user?.lastActiveAt ? new Date(user.lastActiveAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                   </div>
                 </div>
               </div>
@@ -826,58 +562,33 @@ export default function ProfilePage() {
 
             {/* External Links */}
             {user?.externalLinks && Object.values(user.externalLinks).some((link: any) => link) && (
-              <Card glass className="p-5 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
-                  <ExternalLink className="w-5 h-5 text-accent-cyan" />
-                  Links
+              <Card glass className="p-5">
+                <h2 className="text-base sm:text-lg font-display font-bold mb-4 flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4 text-accent-cyan" /> Links
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {user.externalLinks.github && (
-                    <a
-                      href={user.externalLinks.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm sm:text-base"
-                    >
-                      <Github className="w-4 h-4" />
-                      <span className="truncate">GitHub</span>
-                      <ExternalLink className="w-3 h-3 ml-auto" />
+                    <a href={user.externalLinks.github} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm">
+                      <Github className="w-4 h-4 flex-shrink-0" /><span className="truncate">GitHub</span><ExternalLink className="w-3 h-3 ml-auto flex-shrink-0" />
                     </a>
                   )}
                   {user.externalLinks.linkedin && (
-                    <a
-                      href={user.externalLinks.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm sm:text-base"
-                    >
-                      <Linkedin className="w-4 h-4" />
-                      <span className="truncate">LinkedIn</span>
-                      <ExternalLink className="w-3 h-3 ml-auto" />
+                    <a href={user.externalLinks.linkedin} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm">
+                      <Linkedin className="w-4 h-4 flex-shrink-0" /><span className="truncate">LinkedIn</span><ExternalLink className="w-3 h-3 ml-auto flex-shrink-0" />
                     </a>
                   )}
                   {user.externalLinks.portfolio && (
-                    <a
-                      href={user.externalLinks.portfolio}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm sm:text-base"
-                    >
-                      <Globe className="w-4 h-4" />
-                      <span className="truncate">Portfolio</span>
-                      <ExternalLink className="w-3 h-3 ml-auto" />
+                    <a href={user.externalLinks.portfolio} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm">
+                      <Globe className="w-4 h-4 flex-shrink-0" /><span className="truncate">Portfolio</span><ExternalLink className="w-3 h-3 ml-auto flex-shrink-0" />
                     </a>
                   )}
                   {user.externalLinks.leetcode && (
-                    <a
-                      href={user.externalLinks.leetcode}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm sm:text-base"
-                    >
-                      <Code2 className="w-4 h-4" />
-                      <span className="truncate">LeetCode</span>
-                      <ExternalLink className="w-3 h-3 ml-auto" />
+                    <a href={user.externalLinks.leetcode} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-text-secondary hover:text-accent-cyan transition-colors text-sm">
+                      <Code2 className="w-4 h-4 flex-shrink-0" /><span className="truncate">LeetCode</span><ExternalLink className="w-3 h-3 ml-auto flex-shrink-0" />
                     </a>
                   )}
                 </div>
@@ -885,15 +596,14 @@ export default function ProfilePage() {
             )}
 
             {/* Achievements */}
-            <Card glass className="p-5 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-display font-bold mb-4 flex items-center gap-2">
-                <Award className="w-5 h-5 text-accent-cyan" />
-                Achievements
+            <Card glass className="p-5">
+              <h2 className="text-base sm:text-lg font-display font-bold mb-4 flex items-center gap-2">
+                <Award className="w-4 h-4 text-accent-cyan" /> Achievements
               </h2>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-accent-cyan/20 flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-accent-cyan" />
+                  <div className="w-9 h-9 rounded-full bg-accent-cyan/20 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="w-4 h-4 text-accent-cyan" />
                   </div>
                   <div>
                     <div className="text-sm font-medium">Early Adopter</div>
@@ -902,8 +612,8 @@ export default function ProfilePage() {
                 </div>
                 {user?.onboardingCompleted && (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-accent-violet/20 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-accent-violet" />
+                    <div className="w-9 h-9 rounded-full bg-accent-violet/20 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-4 h-4 text-accent-violet" />
                     </div>
                     <div>
                       <div className="text-sm font-medium">Profile Complete</div>
@@ -913,22 +623,15 @@ export default function ProfilePage() {
                 )}
               </div>
             </Card>
+
           </div>
         </div>
       </main>
 
-      {/* Edit Profile Modal */}
-      {
-        showEditModal && (
-          <EditProfileModal
-            user={user}
-            onClose={() => setShowEditModal(false)}
-            onUpdate={handleUpdateProfile}
-          />
-        )
-      }
-
+      {showEditModal && (
+        <EditProfileModal user={user} onClose={() => setShowEditModal(false)} onUpdate={handleUpdateProfile} />
+      )}
       <Toaster position="top-right" />
-    </div >
+    </div>
   );
 }

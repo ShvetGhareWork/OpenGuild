@@ -44,8 +44,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Serve static files (uploaded avatars)
-app.use('/uploads', express.static('uploads'));
-
+app.use('/uploads/avatars', express.static('uploads/avatars'));
+app.use('/uploads/resumes', express.static('uploads/resumes'));
+app.use('/uploads/certificates', express.static('uploads/certificates'));
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/openguild';
 

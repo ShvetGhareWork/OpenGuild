@@ -404,4 +404,124 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
+// ─── Add these routes to backend/routes/users.js ─────────────────────────────
+// Place them BEFORE module.exports = router;
+// They handle resume upload, certificate upload, work experience CRUD
+// ── Upload Resume (PDF only) ──────────────────────────────────────────────────
+router.post('/me/resume', authMiddleware, upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    if (req.file.mimetype !== 'application/pdf') {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ success: false, message: 'Only PDF files are allowed for resume' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Delete old resume if exists
+    if (user.resume?.fileUrl) {
+      const oldPath = path.join(__dirname, '..', user.resume.fileUrl);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    user.resume = {
+      fileUrl: `/uploads/resumes/${req.file.filename}`,
+      fileName: req.file.originalname,
+      uploadedAt: new Date(),
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        resume: user.resume,
+        url: `${BACKEND_URL}${user.resume.fileUrl}`,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+
+// ── Delete Resume ─────────────────────────────────────────────────────────────
+router.delete('/me/resume', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (user.resume?.fileUrl) {
+      const filePath = path.join(__dirname, '..', user.resume.fileUrl);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    user.resume = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Resume deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+
+// ── Upload Certificate file ───────────────────────────────────────────────────
+router.post('/me/certificates/upload', authMiddleware, upload.single('certificate'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ success: false, message: 'Only PDF, JPG, PNG files allowed' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        fileUrl: `/uploads/certificates/${req.file.filename}`,
+        fileName: req.file.originalname,
+        url: `${BACKEND_URL}/uploads/certificates/${req.file.filename}`,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+
+// ── Add / Update Work Experience ──────────────────────────────────────────────
+router.patch('/me/experience', authMiddleware, async (req, res) => {
+  try {
+    const { workExperience } = req.body;
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    user.workExperience = workExperience;
+    await user.save();
+
+    res.json({ success: true, data: { workExperience: user.workExperience, validationScore: user.validationScore } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+
+// ── Add / Update Certifications ───────────────────────────────────────────────
+router.patch('/me/certifications', authMiddleware, async (req, res) => {
+  try {
+    const { certifications } = req.body;
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    user.certifications = certifications;
+    await user.save();
+
+    res.json({ success: true, data: { certifications: user.certifications, validationScore: user.validationScore } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+
 module.exports = router;

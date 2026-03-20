@@ -34,10 +34,7 @@ router.post('/', authMiddleware, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-      },
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });
@@ -47,20 +44,17 @@ router.get('/', async (req, res) => {
   try {
     const { status, techStack, sort, limit = 20, offset = 0 } = req.query;
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     let userId = null;
     if (token) {
       try {
         const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
         userId = decoded.userId;
-      } catch (err) {
-        // Invalid token, continue as unauthenticated user
-      }
+      } catch (err) {}
     }
 
-    // Build query: show public projects + user's own private projects
-    const query = userId 
+    const query = userId
       ? { $or: [{ visibility: 'public' }, { visibility: 'private', creatorId: userId }] }
       : { visibility: 'public' };
 
@@ -79,20 +73,11 @@ router.get('/', async (req, res) => {
 
     const total = await Project.countDocuments(query);
 
-    res.json({
-      success: true,
-      data: {
-        projects,
-        total,
-      },
-    });
+    res.json({ success: true, data: { projects, total } });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-      },
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });
@@ -107,28 +92,18 @@ router.get('/:projectId', async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Project not found',
-        },
+        error: { code: 'NOT_FOUND', message: 'Project not found' },
       });
     }
 
-    // Increment views
     project.views += 1;
     await project.save();
 
-    res.json({
-      success: true,
-      data: project,
-    });
+    res.json({ success: true, data: project });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-      },
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });
@@ -141,66 +116,54 @@ router.post('/:projectId/upvote', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({
         success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Project not found',
-        },
+        error: { code: 'NOT_FOUND', message: 'Project not found' },
       });
     }
 
     const hasUpvoted = project.upvotedBy.includes(req.userId);
 
     if (hasUpvoted) {
-      // Remove upvote
-      project.upvotedBy = project.upvotedBy.filter(
-        (id) => id.toString() !== req.userId
-      );
+      project.upvotedBy = project.upvotedBy.filter((id) => id.toString() !== req.userId);
       project.upvotes -= 1;
     } else {
-      // Add upvote
       project.upvotedBy.push(req.userId);
       project.upvotes += 1;
     }
 
     await project.save();
-
-    // Broadcast live upvote count to all viewers of /projects
     socketLib.emitUpvote(req.params.projectId, project.upvotes);
 
-    res.json({
-      success: true,
-      data: {
-        upvotes: project.upvotes,
-        upvoted: !hasUpvoted,
-      },
-    });
+    res.json({ success: true, data: { upvotes: project.upvotes, upvoted: !hasUpvoted } });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-      },
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });
 
-// Apply for project role
+// ─── Apply for project role ──────────────────────────────────────────────────
 router.post('/:projectId/apply', authMiddleware, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { roleId, roleName, message } = req.body;
 
-    const project = await Project.findById(projectId).populate('creatorId', 'username displayName email');
+    const project = await Project.findById(projectId)
+      .populate('creatorId', 'username displayName email');
 
     if (!project) {
-      return res.status(404).json({
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    // ✅ BLOCK: project creator cannot apply to their own project
+    if (project.creatorId._id.toString() === req.userId) {
+      return res.status(403).json({
         success: false,
-        message: 'Project not found',
+        message: 'You cannot apply to your own project.',
       });
     }
 
-    // Check if user already applied
+    // Check if user already applied for this role
     const existingApplication = project.applications?.find(
       (app) => app.userId.toString() === req.userId && app.roleId === roleId
     );
@@ -212,10 +175,7 @@ router.post('/:projectId/apply', authMiddleware, async (req, res) => {
       });
     }
 
-    // Add application
-    if (!project.applications) {
-      project.applications = [];
-    }
+    if (!project.applications) project.applications = [];
 
     project.applications.push({
       userId: req.userId,
@@ -228,83 +188,77 @@ router.post('/:projectId/apply', authMiddleware, async (req, res) => {
 
     await project.save();
 
-    // Create notification for project creator
+    // ── Build rich notification for project creator ──────────────────────────
     const Notification = require('../models/Notification');
     const User = require('../models/User');
-    
-    const applicant = await User.findById(req.userId).select('username displayName');
-    
+
+    const applicant = await User.findById(req.userId)
+      .select('username displayName avatar reputationScore skills');
+
     const applicationId = project.applications[project.applications.length - 1]._id;
-    
-    await Notification.create({
+
+    const notification = await Notification.create({
       userId: project.creatorId._id,
       type: 'application_received',
       projectId: project._id,
       projectName: project.name,
       applicationId: applicationId.toString(),
       applicantId: req.userId,
+      // Full applicant info so the creator can preview before accepting
       applicantName: applicant?.displayName || applicant?.username || 'Unknown',
+      applicantUsername: applicant?.username || '',
+      applicantAvatar: applicant?.avatar || '',
+      applicantReputation: applicant?.reputationScore || 0,
+      applicantSkills: applicant?.skills?.map((s) => s.name || s) || [],
       roleName,
       message: message || 'I would like to join your team!',
       read: false,
-    }).then(notification => {
-      // Push live notification to the project creator
-      socketLib.emitNotification(project.creatorId._id.toString(), notification);
     });
 
-    console.log(`New application from user ${req.userId} for ${roleName} in project ${project.name}`);
+    // 🔔 Push live notification to creator's personal room
+    socketLib.emitNotification(project.creatorId._id.toString(), notification);
+
+    console.log(`New application from ${applicant?.displayName} for ${roleName} in "${project.name}"`);
 
     res.json({
       success: true,
       message: 'Application submitted successfully',
-      data: {
-        applicationId: project.applications[project.applications.length - 1]._id,
-      },
+      data: { applicationId },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-      },
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });
 
-// Accept or reject application
+// ─── Accept or Reject application ────────────────────────────────────────────
 router.patch('/:projectId/applications/:applicationId', authMiddleware, async (req, res) => {
   try {
     const { projectId, applicationId } = req.params;
-    const { action, message } = req.body; // action: 'accept' or 'reject'
+    const { action, message } = req.body; // action: 'accept' | 'reject'
 
     const project = await Project.findById(projectId);
 
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found',
-      });
+      return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
-    // Check if user is project creator
-    if (project.creatorId.toString() !== req.userId) {
+    const creatorId = project.creatorId?._id || project.creatorId;
+    if (creatorId.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
-        message: 'Only project creator can accept/reject applications',
+        message: 'Only the project creator can accept/reject applications',
       });
     }
 
-    // Find application
     const application = project.applications.find(
       (app) => app._id.toString() === applicationId
     );
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: 'Application not found',
-      });
+      return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
     if (application.status !== 'pending') {
@@ -314,17 +268,14 @@ router.patch('/:projectId/applications/:applicationId', authMiddleware, async (r
       });
     }
 
-    // Update application status
     application.status = action === 'accept' ? 'accepted' : 'rejected';
     application.reviewedAt = new Date();
     application.reviewedBy = req.userId;
 
-    // If accepted, add user to team
     if (action === 'accept') {
       const alreadyInTeam = project.team.some(
         (member) => member.userId.toString() === application.userId.toString()
       );
-
       if (!alreadyInTeam) {
         project.team.push({
           userId: application.userId,
@@ -332,43 +283,80 @@ router.patch('/:projectId/applications/:applicationId', authMiddleware, async (r
           joinedAt: new Date(),
         });
       }
+
+      // Mark the open role as filled
+      const openRole = project.openRoles.find(
+        (r) => r.role === application.roleName && !r.filled
+      );
+      if (openRole) openRole.filled = true;
     }
 
     await project.save();
 
-    // Create notification for applicant and push live
+    // ✅ Auto-delete the "application_received" notification from creator's feed
     const Notification = require('../models/Notification');
+    await Notification.findOneAndDelete({
+      type: 'application_received',
+      applicationId: applicationId,
+      projectId: project._id,
+    });
+
+    // Notify the applicant (live + persisted)
     const notif = await Notification.create({
       userId: application.userId,
       type: action === 'accept' ? 'application_accepted' : 'application_rejected',
       projectId: project._id,
       projectName: project.name,
       roleName: application.roleName,
-      message: message || (action === 'accept'
-        ? `Your application for ${application.roleName} has been accepted!`
-        : `Your application for ${application.roleName} was not accepted this time.`),
+      message:
+        message ||
+        (action === 'accept'
+          ? `Your application for ${application.roleName} has been accepted! 🎉`
+          : `Your application for ${application.roleName} was not accepted this time.`),
+      read: false,
     });
+
     socketLib.emitNotification(application.userId.toString(), notif);
 
     res.json({
       success: true,
       message: `Application ${action}ed successfully`,
-      data: {
-        application,
-      },
+      data: { application },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-      },
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });
 
-// Toggle milestone completed status and broadcast live
+// ─── Get all applications for a project (creator only) ───────────────────────
+router.get('/:projectId/applications', authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId).populate(
+      'applications.userId',
+      'username displayName avatar reputationScore skills bio'
+    );
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    if (project.creatorId.toString() !== req.userId) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    res.json({ success: true, data: { applications: project.applications } });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message },
+    });
+  }
+});
+
+// Toggle milestone
 router.patch('/:projectId/milestones/:milestoneId', authMiddleware, async (req, res) => {
   try {
     const { projectId, milestoneId } = req.params;
@@ -376,9 +364,9 @@ router.patch('/:projectId/milestones/:milestoneId', authMiddleware, async (req, 
 
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
 
-    // Only team members or creator can toggle milestones
-    const isMember = project.team.some(m => m.userId.toString() === req.userId)
-      || project.creatorId.toString() === req.userId;
+    const isMember =
+      project.team.some((m) => m.userId.toString() === req.userId) ||
+      project.creatorId.toString() === req.userId;
     if (!isMember) return res.status(403).json({ success: false, message: 'Not a team member' });
 
     const milestone = project.milestones.id(milestoneId);
@@ -394,15 +382,15 @@ router.patch('/:projectId/milestones/:milestoneId', authMiddleware, async (req, 
     }
 
     await project.save();
-
-    // Broadcast live update to all project room members
     socketLib.emitMilestone(projectId, milestone.toObject());
 
     res.json({ success: true, data: { milestone } });
   } catch (error) {
-    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message },
+    });
   }
 });
 
 module.exports = router;
-
