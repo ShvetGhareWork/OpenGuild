@@ -59,7 +59,12 @@ export default function ChatWindow({ conversation, onBack }: { conversation: any
     // Listen for new messages
     const handleNewMessage = (msg: any) => {
       console.log('ChatWindow: Received new-message', msg);
-      setMessages((prev: any[]) => [...prev, msg]);
+      setMessages((prev: any[]) => {
+        // Avoid duplicate if optimistic update already added it
+        if (prev.some(m => m._id === msg._id)) return prev;
+        // Also check if we have a temporary ID for the same content (optional but safer)
+        return [...prev, msg];
+      });
     };
 
     const handleTyping = ({ username }: { username: string }) => {
@@ -89,18 +94,30 @@ export default function ChatWindow({ conversation, onBack }: { conversation: any
 
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !user) return;
+
+    const newMessage = {
+      _id: Date.now().toString(), // Temporary ID
+      projectId: conversation.projectId,
+      senderId: user._id,
+      senderName: user.username,
+      content: input,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Optimistic update
+    setMessages((prev) => [...prev, newMessage]);
 
     console.log('ChatWindow: Sending message', { projectId: conversation.projectId, content: input });
     socket.emit('send-message', {
       projectId: conversation.projectId,
-      senderId: user?._id,
-      senderName: user?.username,
+      senderId: user._id,
+      senderName: user.username,
       content: input,
     });
 
     setInput('');
-    socket.emit('stop-typing', { projectId: conversation.projectId, userId: user?._id });
+    socket.emit('stop-typing', { projectId: conversation.projectId, userId: user._id });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
