@@ -58,6 +58,7 @@ export default function ChatWindow({ conversation, onBack }: { conversation: any
 
     // Listen for new messages
     const handleNewMessage = (msg: any) => {
+      console.log('ChatWindow: Received new-message', msg);
       setMessages((prev: any[]) => [...prev, msg]);
     };
 
@@ -90,6 +91,7 @@ export default function ChatWindow({ conversation, onBack }: { conversation: any
     e.preventDefault();
     if (!input.trim()) return;
 
+    console.log('ChatWindow: Sending message', { projectId: conversation.projectId, content: input });
     socket.emit('send-message', {
       projectId: conversation.projectId,
       senderId: user?._id,

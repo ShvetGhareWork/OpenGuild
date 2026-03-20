@@ -63,13 +63,13 @@ export function useProjectUpvotes(onUpvote: (data: { projectId: string; upvotes:
 /**
  * useMilestoneUpdates — subscribes to live milestone updates for a specific project.
  */
-export function useMilestoneUpdates(projectId: string | undefined, onUpdate: (data: any) => void) {
+export function useMilestoneUpdates(projectId: string | undefined, userId: string | undefined, onUpdate: (data: any) => void) {
   const socket = getSocket();
 
   useEffect(() => {
-    if (!projectId) return;
-    socket.emit('join-project', { projectId });
+    if (!projectId || !userId) return;
+    socket.emit('join-project', { projectId, userId });
     socket.on('milestone:updated', onUpdate);
     return () => { socket.off('milestone:updated', onUpdate); };
-  }, [projectId, onUpdate, socket]);
+  }, [projectId, userId, onUpdate, socket]);
 }

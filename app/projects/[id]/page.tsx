@@ -240,7 +240,7 @@ export default function ProjectDetailPage() {
     },
     [params.id]
   );
-  useMilestoneUpdates(params.id as string, handleMilestone);
+  useMilestoneUpdates(params.id as string, user?._id, handleMilestone);
 
   const fetchProject = async () => {
     try {

@@ -43,6 +43,7 @@ export function useWebRTC(projectId: string, userId: string) {
       await peer.setLocalDescription(offer);
       peerRef.current = peer;
 
+      console.log('useWebRTC: startCall - emitting call-user', { projectId, from: userId });
       socket.emit('call-user', { projectId, offer, from: userId, name: 'Team Member' });
     } catch (err) {
       console.error('Start call error:', err);
@@ -63,6 +64,7 @@ export function useWebRTC(projectId: string, userId: string) {
       await peer.setLocalDescription(answer);
       peerRef.current = peer;
 
+      console.log('useWebRTC: answerCall - emitting answer-call', { projectId });
       socket.emit('answer-call', { projectId, answer, to: 'all' });
     } catch (err) {
       console.error('Answer call error:', err);
@@ -79,7 +81,8 @@ export function useWebRTC(projectId: string, userId: string) {
   };
 
   useEffect(() => {
-    socket.on('incoming-call', ({ offer, name }) => {
+    socket.on('incoming-call', ({ offer, name, from }) => {
+      console.log('useWebRTC: incoming-call received from', from, name);
       setCallerName(name);
       setCallStatus('incoming');
       // Store offer for answering

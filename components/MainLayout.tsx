@@ -23,7 +23,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
-import { useNotifications } from '@/hooks/useSocket';
+import { useNotifications, useSocket } from '@/hooks/useSocket';
 import { fetchWithAuth, API_URL } from '@/lib/api';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -47,6 +47,7 @@ export default function MainLayout({ children, showGrid = true, gridColor = "#00
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const socket = useSocket(user?._id);
 
   const handleLiveNotification = useCallback((n: any) => {
     setNotifications(prev => [n, ...prev]);
@@ -56,19 +57,26 @@ export default function MainLayout({ children, showGrid = true, gridColor = "#00
   useNotifications(user?._id, handleLiveNotification);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
+    const fetchInitialData = async () => {
       if (!user) return;
       try {
-        const res = await fetchWithAuth(`${API_URL}/notifications`);
-        if (res.success) {
-          setNotifications(res.data.notifications);
+        // Fetch Notifications
+        const notifRes = await fetchWithAuth(`${API_URL}/notifications`);
+        if (notifRes.success) setNotifications(notifRes.data.notifications);
+
+        // Fetch Conversations and join project rooms
+        const convRes = await fetchWithAuth(`${API_URL}/conversations`);
+        if (convRes.success) {
+          convRes.data.conversations.forEach((conv: any) => {
+            socket.emit('join-project', { projectId: conv.projectId, userId: user?._id });
+          });
         }
       } catch (err) {
-        console.error('Failed to fetch notifications:', err);
+        console.error('Failed to fetch initial layout data:', err);
       }
     };
-    fetchNotifications();
-  }, [user]);
+    fetchInitialData();
+  }, [user, socket]);
 
   const toId = (val: any) => (typeof val === 'object' ? val._id : val);
 
