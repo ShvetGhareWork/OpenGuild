@@ -59,15 +59,17 @@ const calculateReputationScore = (userReputation, projectCreatorReputation) => {
 // Calculate overall match score
 const calculateMatchScore = (user, project) => {
   const weights = {
-    skillCompatibility: 0.35,
-    goalAlignment: 0.25,
+    skillCompatibility: 0.30,
+    goalAlignment: 0.20,
+    validationScore: 0.20, // Credibility signal
     reputationScore: 0.15,
-    activityBonus: 0.15,
-    diversityBonus: 0.10,
+    activityBonus: 0.10,
+    diversityBonus: 0.05,
   };
 
   const skillScore = calculateSkillCompatibility(user.skills, project.techStack);
   const goalScore = calculateGoalAlignment(user.goals, project.status);
+  const validationScore = user.validationScore || 0;
   const reputationScore = calculateReputationScore(
     user.reputationScore,
     project.creatorId?.reputationScore || 0
@@ -83,6 +85,7 @@ const calculateMatchScore = (user, project) => {
   const totalScore =
     skillScore * weights.skillCompatibility +
     goalScore * weights.goalAlignment +
+    validationScore * weights.validationScore +
     reputationScore * weights.reputationScore +
     activityScore * weights.activityBonus +
     diversityScore * weights.diversityBonus;
@@ -92,6 +95,7 @@ const calculateMatchScore = (user, project) => {
     breakdown: {
       skillCompatibility: Math.round(skillScore),
       goalAlignment: Math.round(goalScore),
+      validationScore: Math.round(validationScore),
       reputationCompatibility: Math.round(reputationScore),
       activityScore: Math.round(activityScore),
       diversityScore: Math.round(diversityScore),

@@ -3,6 +3,7 @@ const router = express.Router();
 const Contribution = require('../models/Contribution');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const Endorsement = require('../models/Endorsement');
 
 // Calculate reputation impact score
 const calculateImpactScore = (type, metadata = {}) => {
@@ -180,6 +181,49 @@ router.get('/breakdown', authMiddleware, async (req, res) => {
         code: 'INTERNAL_ERROR',
         message: error.message,
       },
+    });
+  }
+});
+
+// Add Peer Endorsement
+router.post('/endorse', authMiddleware, async (req, res) => {
+  try {
+    const { toUserId, projectId, content, rating, skills } = req.body;
+
+    if (toUserId === req.userId) {
+      return res.status(400).json({ success: false, message: 'You cannot endorse yourself' });
+    }
+
+    const endorsement = new Endorsement({
+      fromUserId: req.userId,
+      toUserId,
+      projectId,
+      content,
+      rating,
+      skills,
+    });
+
+    await endorsement.save();
+
+    // Update recipient's reputation
+    const user = await User.findById(toUserId);
+    if (user) {
+      const reputationGain = rating * 10; // e.g. 5 stars = 50 reputation
+      user.reputationScore += reputationGain;
+      await user.save();
+    }
+
+    res.status(201).json({
+      success: true,
+      data: {
+        endorsement,
+        newReputationScore: user?.reputationScore,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message },
     });
   }
 });

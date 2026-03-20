@@ -86,6 +86,10 @@ const projectSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
       },
+      bounty: {
+        type: Number,
+        default: 0,
+      },
     },
   ],
   visibility: {

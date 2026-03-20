@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
+const { syncGitHubSkills } = require('../utils/github');
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
@@ -519,6 +520,44 @@ router.patch('/me/certifications', authMiddleware, async (req, res) => {
     await user.save();
 
     res.json({ success: true, data: { certifications: user.certifications, validationScore: user.validationScore } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+});
+// ── Sync skills with GitHub ──────────────────────────────────────────────────
+router.post('/me/sync/github', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const githubUsername = req.body.githubUsername || user.githubUsername || user.externalLinks?.github?.split('/').pop();
+    if (!githubUsername) {
+      return res.status(400).json({ success: false, message: 'GitHub username required' });
+    }
+
+    const githubSkills = await syncGitHubSkills(githubUsername);
+    
+    // Update user skills
+    githubSkills.forEach(newSkill => {
+      const existingSkill = user.skills.find(s => s.name.toLowerCase() === newSkill.name.toLowerCase());
+      if (existingSkill) {
+        existingSkill.verified = true;
+        existingSkill.verifiedAt = new Date();
+      } else {
+        user.skills.push(newSkill);
+      }
+    });
+
+    user.githubUsername = githubUsername;
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        skills: user.skills,
+        validationScore: user.validationScore,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
   }

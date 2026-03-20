@@ -3,6 +3,8 @@ const router = express.Router();
 const Project = require('../models/Project');
 const authMiddleware = require('../middleware/auth');
 const socketLib = require('../lib/io');
+const User = require('../models/User');
+const TokenTransaction = require('../models/TokenTransaction');
 
 // Create project
 router.post('/', authMiddleware, async (req, res) => {
@@ -379,6 +381,56 @@ router.patch('/:projectId/milestones/:milestoneId', authMiddleware, async (req, 
     } else {
       milestone.completedAt = undefined;
       milestone.completedBy = undefined;
+    }
+
+    // Bounty transfer logic
+    if (milestone.completed && milestone.bounty > 0) {
+      const creator = await User.findById(project.creatorId);
+      const builder = await User.findById(req.userId);
+
+      if (creator && builder && creator.tokenBalance >= milestone.bounty) {
+        // Deduct from creator
+        creator.tokenBalance -= milestone.bounty;
+        await creator.save();
+
+        // Add to builder
+        builder.tokenBalance += milestone.bounty;
+        await builder.save();
+
+        // Create transactions
+        await TokenTransaction.create([
+          {
+            userId: creator._id,
+            type: 'spend',
+            amount: milestone.bounty,
+            reason: `Milestone bounty: ${milestone.title}`,
+            relatedId: project._id,
+            balanceBefore: creator.tokenBalance + milestone.bounty,
+            balanceAfter: creator.tokenBalance,
+          },
+          {
+            userId: builder._id,
+            type: 'earn',
+            amount: milestone.bounty,
+            reason: `Milestone bounty: ${milestone.title}`,
+            relatedId: project._id,
+            balanceBefore: builder.tokenBalance - milestone.bounty,
+            balanceAfter: builder.tokenBalance,
+          },
+        ]);
+        
+        // Notify both parties (optional, can be expanded)
+        socketLib.emitNotification(creator._id.toString(), {
+          type: 'milestone_bounty_paid',
+          message: `Paid ${milestone.bounty} tokens for "${milestone.title}"`,
+          projectId: project._id,
+        });
+        socketLib.emitNotification(builder._id.toString(), {
+          type: 'milestone_bounty_earned',
+          message: `Earned ${milestone.bounty} tokens for "${milestone.title}"!`,
+          projectId: project._id,
+        });
+      }
     }
 
     await project.save();
