@@ -26,13 +26,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import EditProfileModal from '@/components/EditProfileModal';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
-import { API_URL, getBackendUrl } from '@/lib/api';
+import { useUser } from '@/components/providers/user-provider';
+import { fetchWithAuth, API_URL, getBackendUrl } from '@/lib/api';
 import { useNotifications } from '@/hooks/useSocket';
 import CredentialsSection from '@/components/CredentialsSection';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: userLoading, logout, refreshUser } = useUser();
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [myProjects, setMyProjects] = useState<any[]>([]);
@@ -56,56 +57,53 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (!token) { router.push('/login'); return; }
-      try {
-        const res = await fetch(`${API_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-        const data = await res.json();
-        if (!data.success) {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_id');
-          router.push('/login');
-          return;
-        }
-        setUser(data.data);
-        try {
-          const projectsRes = await fetch(`${API_URL}/projects`, { headers: { Authorization: `Bearer ${token}` } });
-          const projectsData = await projectsRes.json();
-          if (projectsData.success) {
-            const allProjects = projectsData.data.projects;
-            setMyProjects(allProjects.filter(
-              (p: any) => p.creatorId?._id === data.data._id || p.creatorId === data.data._id
-            ));
-            setTeamProjects(allProjects.filter((p: any) =>
-              p.team?.some((member: any) =>
-                (member.userId?._id === data.data._id || member.userId === data.data._id) &&
-                (p.creatorId?._id !== data.data._id && p.creatorId !== data.data._id)
-              )
-            ));
-          }
-        } catch (err) { console.error('Projects fetch error:', err); }
-        try {
-          const notifRes = await fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${token}` } });
-          const notifData = await notifRes.json();
-          if (notifData.success) setNotifications(notifData.data.notifications);
-        } catch (err) { console.error('Notifications fetch error:', err); }
-        setLoading(false);
-      } catch (err) {
-        console.error('Profile fetch error:', err);
+    const fetchData = async () => {
+      if (userLoading) return;
+      if (!user) {
         router.push('/login');
+        return;
+      }
+
+      try {
+        // Fetch projects and notifications in parallel
+        const [projectsData, notifData] = await Promise.all([
+          fetchWithAuth(`${API_URL}/projects`),
+          fetchWithAuth(`${API_URL}/notifications`)
+        ]);
+
+        if (projectsData.success) {
+          const allProjects = projectsData.data.projects;
+          setMyProjects(allProjects.filter(
+            (p: any) => p.creatorId?._id === user._id || p.creatorId === user._id
+          ));
+          setTeamProjects(allProjects.filter((p: any) =>
+            p.team?.some((member: any) =>
+              (member.userId?._id === user._id || member.userId === user._id) &&
+              (p.creatorId?._id !== user._id && p.creatorId !== user._id)
+            )
+          ));
+        }
+
+        if (notifData.success) {
+          setNotifications(notifData.data.notifications);
+        }
+      } catch (err) {
+        console.error('Profile data fetch error:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchUser();
-  }, [router]);
+
+    fetchData();
+  }, [user, userLoading, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_id');
-    router.push('/');
+    logout();
   };
 
-  const handleUpdateProfile = (updatedUser: any) => setUser(updatedUser);
+  const handleUpdateProfile = () => {
+    refreshUser();
+  };
 
   const handleAccept = async (notif: any) => {
     const token = localStorage.getItem('auth_token');

@@ -2,6 +2,7 @@
 
 import "./globals.css";
 import LenisProvider from "@/components/providers/lenis-provider";
+import { UserProvider } from "@/components/providers/user-provider";
 
 export default function RootLayout({
   children,
@@ -11,9 +12,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <LenisProvider>
-          {children}
-        </LenisProvider>
+        <UserProvider>
+          <LenisProvider>
+            {children}
+          </LenisProvider>
+        </UserProvider>
       </body>
     </html>
   );

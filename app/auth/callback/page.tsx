@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { tokenManager } from '@/lib/api';
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -49,8 +50,8 @@ function AuthCallbackContent() {
         }
 
         // Store authentication token
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_id', userId);
+        tokenManager.setToken(token);
+        tokenManager.setUserId(userId);
 
         setStatus('success');
 

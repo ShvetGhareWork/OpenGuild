@@ -24,43 +24,29 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useUser } from '@/components/providers/user-provider';
+import { fetchWithAuth, API_URL } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: userLoading, logout } = useUser();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
+      if (userLoading) return;
+      if (!user) {
         router.push('/login');
         return;
       }
 
       try {
-        const userRes = await fetch('http://localhost:5000/api/users/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const userData = await userRes.json();
-        if (!userData.success) {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_id');
-          router.push('/login');
-          return;
+        const projectsData = await fetchWithAuth(`${API_URL}/projects?limit=5`);
+        if (projectsData.success) {
+          setProjects(projectsData.data.projects || []);
         }
-
-        setUser(userData.data);
-
-        const projectsRes = await fetch('http://localhost:5000/api/projects?limit=5', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const projectsData = await projectsRes.json();
-        if (projectsData.success) setProjects(projectsData.data.projects || []);
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -69,15 +55,13 @@ export default function DashboardPage() {
     };
 
     fetchDashboardData();
-  }, [router]);
+  }, [user, userLoading, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_id');
-    router.push('/');
+    logout();
   };
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-3xl bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent animate-pulse">

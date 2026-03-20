@@ -64,6 +64,53 @@ export const authAPI = {
 };
 
 // Token management
+// Generic fetch with auth
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
+  const token = tokenManager.getToken();
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const response = await fetch(url, { ...options, headers });
+  
+  if (response.status === 401) {
+    if (typeof window !== 'undefined') {
+      tokenManager.removeToken();
+      tokenManager.removeUserId();
+      // Only redirect if not already on login/signup/forgot-password/landing
+      const publicPaths = ['/login', '/signup', '/forgot-password', '/'];
+      if (!publicPaths.includes(window.location.pathname)) {
+        window.location.href = '/login?error=session_expired';
+      }
+    }
+    throw new Error('Unauthorized');
+  }
+
+  return response.json();
+}
+
+export const userAPI = {
+  async getMe() {
+    return fetchWithAuth(`${API_URL}/users/me`);
+  },
+  
+  async updateProfile(data: any) {
+    return fetchWithAuth(`${API_URL}/users/me`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  
+  async syncGitHub() {
+    return fetchWithAuth(`${API_URL}/users/me/sync/github`, {
+      method: 'POST',
+    });
+  }
+};
+
 export const tokenManager = {
   setToken(token: string) {
     if (typeof window !== 'undefined') {
@@ -95,5 +142,11 @@ export const tokenManager = {
       return localStorage.getItem('user_id');
     }
     return null;
+  },
+
+  removeUserId() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user_id');
+    }
   },
 };
