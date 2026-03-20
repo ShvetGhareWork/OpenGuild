@@ -294,7 +294,7 @@ export default function CredentialsSection({ user, isOwner, onUpdate }: Props) {
     const [workExperience, setWorkExperience] = useState<WorkExp[]>(user?.workExperience || []);
     const [certifications, setCertifications] = useState<Certification[]>(user?.certifications || []);
     const [resume, setResume] = useState<Resume>(user?.resume || {});
-    const [validationScore, setValidationScore] = useState(user?.validationScore || 0);
+    const [validationScore, setValidationScore] = useState<number>(user?.validationScore || 0);
 
     const [addingExp, setAddingExp] = useState(false);
     const [editingExpId, setEditingExpId] = useState<string | null>(null);
@@ -545,7 +545,11 @@ export default function CredentialsSection({ user, isOwner, onUpdate }: Props) {
                                         <div className="flex-1 min-w-0">
                                             <div className="font-semibold text-white text-sm flex items-center gap-2">
                                                 {cert.title}
-                                                {cert.fileUrl && <CheckCircle className="w-3.5 h-3.5 text-green-400" title="File uploaded" />}
+                                                {cert.fileUrl && (
+                                                    <span title="File uploaded">
+                                                        <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="text-violet-400 text-xs">{cert.issuer}</div>
                                             {cert.issueDate && (
