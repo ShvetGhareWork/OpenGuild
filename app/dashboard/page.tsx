@@ -3,6 +3,7 @@
 import MainLayout from '@/components/MainLayout';
 import { Button, Card, Badge } from '@/components/ui';
 import { useEffect, useState } from 'react';
+import { getBackendUrl } from '@/lib/api';
 import {
   Sparkles,
   Trophy,
@@ -99,7 +100,7 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 lg:mb-8">
                 {user?.avatar ? (
                   <img
-                    src={`http://localhost:5000${user.avatar}`}
+                    src={`${getBackendUrl()}${user.avatar}`}
                     alt={displayName}
                     className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full object-cover border-4 border-white/20 shadow-lg flex-shrink-0"
                   />

@@ -3,6 +3,7 @@
 import MainLayout from '@/components/MainLayout';
 import { Button, Card, Badge } from '@/components/ui';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { API_URL, getBackendUrl } from '@/lib/api';
 import {
   ArrowUpCircle,
   Eye,
@@ -23,7 +24,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { getProjectById } from '@/lib/dummyProjects';
 import toast from 'react-hot-toast';
 import ProjectChat from '@/components/ProjectChat';
-import { API_URL } from '@/lib/api';
 import { useProjectUpvotes, useMilestoneUpdates } from '@/hooks/useSocket';
 import { io as socketIO } from 'socket.io-client';
 
@@ -197,7 +197,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!user?._id) return;
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:5000';
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || getBackendUrl();
     const socket = socketIO(wsUrl, { transports: ['websocket'] });
     socketRef.current = socket;
 
