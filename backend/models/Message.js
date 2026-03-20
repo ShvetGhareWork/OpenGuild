@@ -11,6 +11,10 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  content: {
+    type: String,
+    required: true,
+  },
   type: {
     type: String,
     enum: ['text', 'image', 'file', 'call_log'],
