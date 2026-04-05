@@ -2,15 +2,28 @@
 
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getBackendUrl } from '@/lib/api';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = getBackendUrl();
 
 // Singleton socket shared across the app
 let _socket: Socket | null = null;
 
 function getSocket(): Socket {
   if (!_socket) {
-    _socket = io(BACKEND_URL, { autoConnect: true });
+    _socket = io(BACKEND_URL, { 
+      autoConnect: true,
+      reconnectionAttempts: 5,
+      timeout: 10000,
+    });
+    
+    _socket.on('connect_error', (err) => {
+      console.warn(`[Socket.io] Connection error to ${BACKEND_URL}:`, err.message);
+      // If we are in production and connecting to localhost/loopback, this is a misconfiguration
+      if (typeof window !== 'undefined' && BACKEND_URL.includes('localhost') && window.location.hostname !== 'localhost') {
+        console.error('[Socket.io] CRITICAL: Production app is trying to connect to a local backend. Please check Vercel environment variables.');
+      }
+    });
   }
   return _socket;
 }

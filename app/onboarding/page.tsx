@@ -9,6 +9,9 @@ import {
   Palette,
   Briefcase,
   Target,
+  Linkedin,
+  Terminal,
+  Globe,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { API_URL } from '@/lib/api';
@@ -221,17 +224,24 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="space-y-6">
-                   {['github', 'linkedin', 'portfolio'].map((key) => (
-                      <div key={key}>
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                           {key.toUpperCase()} ID
+                   {[
+                     { key: 'github', label: 'GitHub', icon: Github, placeholder: 'https://github.com/username' },
+                     { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/in/username' },
+                     { key: 'leetcode', label: 'LeetCode', icon: Terminal, placeholder: 'https://leetcode.com/username' },
+                     { key: 'behance', label: 'Behance', icon: Palette, placeholder: 'https://behance.net/username' },
+                     { key: 'portfolio', label: 'Portfolio', icon: Globe, placeholder: 'https://yourportfolio.com' },
+                   ].map((item) => (
+                      <div key={item.key}>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                           <item.icon className="w-3 h-3 text-cyan-500" />
+                           {item.label} Link
                         </label>
                         <input
                           type="url"
-                          value={externalLinks[key as keyof typeof externalLinks]}
-                          onChange={(e) => setExternalLinks({ ...externalLinks, [key]: e.target.value })}
-                          className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:border-cyan-500/50 shadow-inner"
-                          placeholder={`https://www.${key}.com/your-id`}
+                          value={externalLinks[item.key as keyof typeof externalLinks]}
+                          onChange={(e) => setExternalLinks({ ...externalLinks, [item.key]: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:border-cyan-500/50 shadow-inner transition-all hover:border-white/20"
+                          placeholder={item.placeholder}
                         />
                       </div>
                    ))}
@@ -239,7 +249,13 @@ export default function OnboardingPage() {
 
                 <div className="flex gap-4 mt-12">
                   <Button variant="ghost" onClick={() => setStep(2)} className="flex-1 h-14 border border-white/5 text-gray-500 uppercase font-black text-[10px] tracking-widest">Previous</Button>
-                  <Button onClick={() => setStep(4)} disabled={selectedGoals.length === 0} className="flex-[2] h-14 bg-white text-black font-extrabold text-xs uppercase tracking-widest">Link System →</Button>
+                  <Button 
+                    onClick={() => setStep(4)} 
+                    disabled={selectedGoals.length === 0 || !externalLinks.github || !externalLinks.linkedin} 
+                    className="flex-[2] h-14 bg-white text-black font-extrabold text-xs uppercase tracking-widest disabled:opacity-30"
+                  >
+                    {!externalLinks.github || !externalLinks.linkedin ? 'GitHub & LinkedIn Required' : 'Link System →'}
+                  </Button>
                 </div>
               </div>
             )}

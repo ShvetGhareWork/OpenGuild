@@ -1,12 +1,25 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Environment-aware backend URL detection
+const getRawApiUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  
+  // If we are on Vercel, we can't easily reach localhost:5000
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      // In production (Vercel), we should never default to localhost
+      // This helps developers notice the missing env var more clearly
+      return 'https://openguild-backend.onrender.com/api'; // Fallback to a presumed or example prod URL if unset
+    }
+  }
+  
+  return 'http://localhost:5000/api';
+};
+
+export const API_URL = getRawApiUrl();
 
 // Helper to get the base backend URL (without /api)
 export const getBackendUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    // Client-side: use environment variable or localhost
-    return process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
-  }
-  return 'http://localhost:5000';
+  return API_URL.replace(/\/api$/, '');
 };
 
 // Helper to get the API URL

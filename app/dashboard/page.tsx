@@ -4,6 +4,8 @@ import MainLayout from '@/components/MainLayout';
 import { Button, Card, Badge } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { getBackendUrl } from '@/lib/api';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import {
   Sparkles,
   Trophy,
@@ -23,6 +25,7 @@ import {
   Star,
   GitBranch,
   Zap,
+  HelpCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -58,6 +61,94 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [user, userLoading, router]);
 
+  const startTour = () => {
+    const driverObj = driver({
+      showProgress: true,
+      steps: [
+        { 
+          element: '#welcome-hero', 
+          popover: { 
+            title: 'Welcome to OpenGuild!', 
+            description: 'This is your mission control. Let\'s take a quick look around.',
+            side: "bottom",
+            align: 'start'
+          } 
+        },
+        { 
+          element: '#profile-card', 
+          popover: { 
+            title: 'Your Identity', 
+            description: 'Track your reputation, skills, and manage your profile here.',
+            side: "right",
+            align: 'start'
+          } 
+        },
+        { 
+          element: '#new-project-card', 
+          popover: { 
+            title: 'Start Building', 
+            description: 'Got an idea? Create a new project and start your journey.',
+            side: "left",
+            align: 'start'
+          } 
+        },
+        { 
+          element: '#todo-card', 
+          popover: { 
+            title: 'Next Steps', 
+            description: 'Check your pending tasks to stay on track.',
+            side: "bottom",
+            align: 'start'
+          } 
+        },
+        { 
+          element: '#tokens-card', 
+          popover: { 
+            title: 'Your Rewards', 
+            description: 'Earn skill tokens by contributing to projects and winning hackathons.',
+            side: "top",
+            align: 'center'
+          } 
+        },
+        { 
+          element: '#matching-card', 
+          popover: { 
+            title: 'Find Your Team', 
+            description: 'Our AI will help you find the perfect teammates based on your skills.',
+            side: "top",
+            align: 'center'
+          } 
+        },
+        { 
+          element: '#quick-actions', 
+          popover: { 
+            title: 'Quick Access', 
+            description: 'Jump to hackathons, reputation boards, and your achievements.',
+            side: "top",
+            align: 'center'
+          } 
+        },
+      ],
+      onDestroyStarted: () => {
+        localStorage.setItem('dashboard-tour-completed', 'true');
+        driverObj.destroy();
+      }
+    });
+
+    driverObj.drive();
+  };
+
+  useEffect(() => {
+    if (loading || userLoading || !user) return;
+
+    const hasCompletedTour = localStorage.getItem('dashboard-tour-completed');
+    if (!hasCompletedTour) {
+      setTimeout(() => {
+        startTour();
+      }, 1000);
+    }
+  }, [loading, userLoading, user]);
+
   if (loading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -74,23 +165,35 @@ export default function DashboardPage() {
     <MainLayout gridColor="#a855f7">
       <div className="max-w-7xl mx-auto px-6 py-10 relative z-10">
         {/* ================= HERO SECTION ================= */}
-        <div className="mb-6 sm:mb-8 lg:mb-12 text-center sm:text-left">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold mb-2 sm:mb-4 text-white leading-tight">
-            Welcome back,{' '}
-            <span className="bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              {displayName}
-            </span>
-            ! 👋
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto sm:mx-0">
-            Here's what's happening in your guild today
-          </p>
+        <div id="welcome-hero" className="mb-6 sm:mb-8 lg:mb-12 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-display font-bold mb-2 sm:mb-4 text-white leading-tight">
+              Welcome back,{' '}
+              <span className="bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                {displayName}
+              </span>
+              ! 👋
+            </h1>
+            <p className="text-gray-400 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto sm:mx-0">
+              Here's what's happening in your guild today
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={startTour}
+            className="flex items-center gap-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl px-4 py-6 border border-white/5"
+          >
+            <HelpCircle className="w-5 h-5" />
+            <span className="font-semibold tracking-wide">Tour Dashboard</span>
+          </Button>
         </div>
 
         {/* Bento Box Grid - Perfect responsive layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-8 lg:mb-12">
           {/* Large Profile Card */}
           <div
+            id="profile-card"
             className="sm:col-span-2 lg:col-span-2 xl:col-span-2 row-span-2 backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden group hover:scale-[1.02] hover:border-white/20 transition-all cursor-pointer"
             onClick={() => router.push('/profile')}
           >
@@ -133,6 +236,7 @@ export default function DashboardPage() {
 
           {/* Create Project Card */}
           <div
+            id="new-project-card"
             className="backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group hover:scale-[1.02] hover:border-purple-500/50 transition-all cursor-pointer h-full"
             onClick={() => router.push('/projects/create')}
           >
@@ -145,7 +249,7 @@ export default function DashboardPage() {
           </div>
 
           {/* To Do Card */}
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group hover:scale-[1.02] hover:border-white/20 transition-all h-full">
+          <div id="todo-card" className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group hover:scale-[1.02] hover:border-white/20 transition-all h-full">
             <div className="absolute top-3 right-3 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full opacity-40"></div>
             <div className="relative z-10">
               <h2 className="text-yellow-400 text-xs font-medium mb-3 sm:mb-4 uppercase tracking-wider">To Do</h2>
@@ -197,6 +301,7 @@ export default function DashboardPage() {
 
           {/* Tokens Card */}
           <div
+            id="tokens-card"
             className="backdrop-blur-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group hover:scale-[1.02] hover:border-yellow-500/50 transition-all cursor-pointer h-full"
             onClick={() => router.push('/tokens')}
           >
@@ -210,6 +315,7 @@ export default function DashboardPage() {
 
           {/* Team Matching Card */}
           <div
+            id="matching-card"
             className="sm:col-span-2 lg:col-span-3 xl:col-span-2 backdrop-blur-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden group hover:scale-[1.02] hover:border-blue-500/50 transition-all cursor-pointer"
             onClick={() => router.push('/matching')}
           >
@@ -237,7 +343,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions Row - Perfect responsive grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div id="quick-actions" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           <button
             onClick={() => router.push('/projects')}
             className="backdrop-blur-xl group bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left hover:scale-[1.02] hover:bg-white/10 hover:border-white/20 transition-all h-full flex flex-col items-center sm:items-start text-center sm:text-left"
