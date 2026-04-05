@@ -152,16 +152,11 @@ const projectSchema = new mongoose.Schema({
   },
 });
 
-projectSchema.index({ slug: 1 });
 projectSchema.index({ creatorId: 1 });
 projectSchema.index({ upvotes: -1 });
 projectSchema.index({ techStack: 1 });
 projectSchema.index({ status: 1 });
 projectSchema.index({ createdAt: -1 });
-projectSchema.index({ workflowStage: 1 });
-projectSchema.index({ recruiter: 1 });
-projectSchema.index({ selectedBuilder: 1 });
-projectSchema.index({ assignedMentor: 1 });
 
 // Generate slug from name
 projectSchema.pre('save', function (next) {

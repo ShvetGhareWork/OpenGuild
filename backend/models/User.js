@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema({
   passwordHash: String,
   googleId: {
     type: String,
-    unique: true,
     sparse: true,
   },
   githubId: {
@@ -153,8 +152,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
 userSchema.index({ reputationScore: -1 });
 userSchema.index({ 'skills.name': 1 });
 userSchema.index({ roles: 1 });
